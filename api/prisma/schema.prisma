@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id                Int       @id @default(autoincrement())
+  nombre            String    @db.VarChar(150)
+  numero            String    @unique @db.VarChar(150) // The 'usuario' field
+  cuit              String    @db.VarChar(50)  // The 'clave' field
+  email             String?   @db.VarChar(150)
+  porcentajeaumento Float     @default(0.00)
+  fechaUltimoLogin  DateTime?
+  estado            String    @default("ACTIVO") // ACTIVO, INACTIVO
+  visitas           Int       @default(0)
+  fechaAlta         DateTime  @default(now())
+
+  pedidos           Pedido[]
+
+  @@map("clientes")
+}
+
+model Producto {
+  codigo         String    @id @db.VarChar(100)
+  aplicacion     String?   @db.Text
+  marca          String?   @db.VarChar(100)
+  rubro          String?   @db.VarChar(100)
+  info           String?   @db.Text // Equivalencias
+  precio_lista   Float     @default(0)
+  precio_oferta  Float     @default(0)
+  imagen         String?   @db.VarChar(255)
+  vigente        Int       @default(1)
+  fecha_agregado DateTime  @default(now())
+  fecha_modif    DateTime  @updatedAt
+
+  @@map("productos")
+}
+
+model Pedido {
+  idpedidos      Int       @id @default(autoincrement())
+  cliente        Int       
+  estado         String    @default("PENDIENTE") // PENDIENTE, LISTO
+  fechapedido    DateTime? @default(now())
+  items          String?   @db.Text // codigo&marca&cant,codigo&marca&cant,...
+
+  clienteRel     Cliente   @relation(fields: [cliente], references: [id])
+
+  @@map("pedidos")
+}
+
+model ActLista {
+  id      Int      @id @default(autoincrement())
+  fecha   DateTime @default(now())
+  cambios String?  @db.Text
+
+  @@map("act_lista")
+}
+
+model ActOferta {
+  id      Int      @id @default(autoincrement())
+  fecha   DateTime @default(now())
+
+  @@map("act_oferta")
+}
