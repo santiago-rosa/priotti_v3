@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth';
 import productsRoutes from './routes/products';
@@ -18,6 +19,8 @@ export const prisma = new PrismaClient();
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/images', express.static(path.join(__dirname, '../public/images')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productsRoutes);

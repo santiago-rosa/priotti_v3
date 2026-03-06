@@ -126,15 +126,26 @@ export const Catalog = () => {
 
                         return (
                             <div key={product.codigo} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow overflow-hidden flex flex-col relative group">
-                                {isOffer && (
-                                    <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 shadow-sm flex items-center">
-                                        <Tag className="w-3 h-3 mr-1" /> OFERTA
-                                    </div>
-                                )}
+                                <div className="aspect-square w-full bg-gray-100 relative overflow-hidden group-hover:opacity-90 transition-opacity">
+                                    <img
+                                        src={`http://localhost:3000/images/${product.codigo}.png`}
+                                        alt={displayApp}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = 'http://localhost:3000/images/placeholder.png';
+                                        }}
+                                        loading="lazy"
+                                    />
+                                    {isOffer && (
+                                        <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 shadow-sm flex items-center">
+                                            <Tag className="w-3 h-3 mr-1" /> OFERTA
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="p-5 flex-grow">
                                     <div className="text-xs font-semibold tracking-wider text-gray-500 mb-1 uppercase">{product.marca}</div>
-                                    <h3 className="text-sm font-bold text-gray-900 mb-2 leading-tight pr-8">{displayApp}</h3>
+                                    <h3 className="text-sm font-bold text-gray-900 mb-2 leading-tight pr-8 line-clamp-2 h-10">{displayApp}</h3>
 
                                     <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded-md">
                                         <div><span className="font-semibold block">CÓDIGO</span> {product.codigo}</div>
