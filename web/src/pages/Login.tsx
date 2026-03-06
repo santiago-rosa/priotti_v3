@@ -11,8 +11,13 @@ export const Login = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const login = useAuthStore((state) => state.login);
+    const { login, user } = useAuthStore();
     const navigate = useNavigate();
+
+    if (user) {
+        navigate('/');
+        return null;
+    }
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
