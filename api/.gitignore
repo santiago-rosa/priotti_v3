@@ -1,3 +1,16 @@
-node_modules
-# Keep environment variables out of version control
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+
+# Environment variables
 .env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
