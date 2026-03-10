@@ -132,6 +132,21 @@ export const Catalog = () => {
                                     </div>
                                 )}
 
+                                {/* Product Image */}
+                                <div className="w-full h-40 bg-gray-50 flex items-center justify-center border-b border-gray-100 overflow-hidden">
+                                    <img
+                                        src={`/images/products/${product.codigo}.png`}
+                                        alt={product.aplicacion || product.codigo}
+                                        className="w-full h-full object-contain p-2"
+                                        onError={(e) => {
+                                            const target = e.currentTarget;
+                                            if (!target.src.includes('default.png')) {
+                                                target.src = '/images/products/default.png';
+                                            }
+                                        }}
+                                    />
+                                </div>
+
                                 <div className="p-5 flex-grow">
                                     <div className="text-xs font-semibold tracking-wider text-gray-500 mb-1 uppercase">{product.marca}</div>
                                     <h3 className="text-sm font-bold text-gray-900 mb-2 leading-tight pr-8">{displayApp}</h3>

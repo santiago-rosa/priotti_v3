@@ -3,7 +3,7 @@
         'name' => 'priotti/api',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '91468706409690d98b3f26acc63c5ab4fed7c248',
+        'reference' => 'ea49f03d16527668007dc3b7137ff9d0162d8554',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -112,7 +112,7 @@
         'priotti/api' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '91468706409690d98b3f26acc63c5ab4fed7c248',
+            'reference' => 'ea49f03d16527668007dc3b7137ff9d0162d8554',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
