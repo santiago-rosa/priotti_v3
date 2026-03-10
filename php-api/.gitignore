@@ -1,0 +1,29 @@
+# Dependencies (reinstall with: composer install)
+/vendor/
+
+# Environment variables (contains secrets, never commit!)
+.env
+
+# Uploaded files (user content)
+/uploads/
+
+# PHP logs and debug files
+*.log
+error_log
+log.txt
+
+# Temporary/generated files
+test_api.php
+*.tmp
+*.cache
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Composer binary (if downloaded locally)
+composer.phar
