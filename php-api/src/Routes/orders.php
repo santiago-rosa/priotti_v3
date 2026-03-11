@@ -110,7 +110,7 @@ $app->post('/api/orders/checkout', function (Request $request, Response $respons
 
     try {
         $db = Database::getConnection();
-        $stmt = $db->prepare("SELECT idpedidos FROM pedidos WHERE cliente = ? AND estado = 'PENDIENTE' LIMIT 1");
+        $stmt = $db->prepare("SELECT idpedidos, items FROM pedidos WHERE cliente = ? AND estado = 'PENDIENTE' LIMIT 1");
         $stmt->execute([$clientId]);
         $pendingOrder = $stmt->fetch();
 
