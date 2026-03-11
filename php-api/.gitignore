@@ -27,3 +27,4 @@ Thumbs.db
 
 # Composer binary (if downloaded locally)
 composer.phar
+error_log

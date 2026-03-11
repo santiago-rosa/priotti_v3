@@ -110,7 +110,7 @@ $app->post('/api/orders/checkout', function (Request $request, Response $respons
 
     try {
         $db = Database::getConnection();
-        $stmt = $db->prepare("SELECT idpedidos FROM pedidos WHERE cliente = ? AND estado = 'PENDIENTE' LIMIT 1");
+        $stmt = $db->prepare("SELECT idpedidos, items FROM pedidos WHERE cliente = ? AND estado = 'PENDIENTE' LIMIT 1");
         $stmt->execute([$clientId]);
         $pendingOrder = $stmt->fetch();
 
@@ -129,7 +129,12 @@ $app->post('/api/orders/checkout', function (Request $request, Response $respons
         $clientName = $clientData ? $clientData['nombre'] : 'Desconocido';
 
         $emailService = new \App\Services\EmailService();
-        $emailService->sendOrderNotification((string) $clientId, $clientName, $pendingOrder['items']);
+        $sent = $emailService->sendOrderNotification((string) $clientId, $clientName, $pendingOrder['items']);
+
+        if (!$sent) {
+            $response->getBody()->write(json_encode(['error' => 'No se pudo enviar el correo de confirmación. Por favor, contacte a soporte.']));
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
 
         $response->getBody()->write(json_encode(['message' => 'Pedido cerrado correctamente!']));
         return $response->withHeader('Content-Type', 'application/json');

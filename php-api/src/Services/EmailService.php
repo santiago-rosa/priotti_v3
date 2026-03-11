@@ -45,7 +45,7 @@ class EmailService
                 $this->mail->SMTPSecure = strtolower($encryption) === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
             }
 
-            // Trust self-signed certificates for development/staging environments if needed
+            // Trust self-signed certificates and mismatched hostnames (common in cPanel shared hosting)
             $this->mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer' => false,

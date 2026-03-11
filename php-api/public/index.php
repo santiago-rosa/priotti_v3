@@ -4,14 +4,22 @@ use Slim\Factory\AppFactory;
 use Tuupola\Middleware\CorsMiddleware;
 use App\Middleware\AuthMiddleware;
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 require __DIR__ . '/../vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
+
+$isDev = ($_ENV['APP_ENV'] ?? 'production') === 'development';
+
+// 1. Configure Error Display
+ini_set('display_errors', $isDev ? '1' : '0');
+ini_set('display_startup_errors', $isDev ? '1' : '0');
+error_reporting(E_ALL);
+
+// 2. Configure Error Logging
+$logFile = __DIR__ . '/../logs/php-error.log';
+ini_set('log_errors', '1');
+ini_set('error_log', $logFile);
 
 $app = AppFactory::create();
 
@@ -40,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Optional: Log requests to a file to verify they arrive (debug only)
 // file_put_contents(__DIR__ . '/log.txt', date('Y-m-d H:i:s') . " - " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI'] . "\n", FILE_APPEND);
 
-$app->addErrorMiddleware(true, true, true);
+// addErrorMiddleware(bool $displayErrorDetails, bool $logErrors, bool $logErrorDetails)
+$app->addErrorMiddleware($isDev, true, true);
 
 // API Routes
 $app->get('/', function ($request, $response) {
