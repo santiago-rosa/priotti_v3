@@ -76,9 +76,15 @@ $app->post('/api/utils/contact', function (Request $request, Response $response)
         return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
     }
 
-    // TODO: Implement actual mailing logic (PHPMailer)
-    error_log("Email sim format: De $name ($email): $message");
+    $emailService = new \App\Services\EmailService();
+    $sent = $emailService->sendContactMessage($name, $phone, $email, $message);
 
-    $response->getBody()->write(json_encode(['message' => 'Mensaje enviado correctamente']));
+    if ($sent) {
+        $response->getBody()->write(json_encode(['message' => 'Mensaje enviado correctamente']));
+    } else {
+        $response->getBody()->write(json_encode(['error' => 'No se pudo enviar el mensaje. Intente más tarde.']));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+
     return $response->withHeader('Content-Type', 'application/json');
 });

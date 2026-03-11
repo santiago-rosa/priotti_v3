@@ -3,7 +3,7 @@
         'name' => 'priotti/api',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => 'ea49f03d16527668007dc3b7137ff9d0162d8554',
+        'reference' => '0406c1dbc408bc52639cf649a94202d62c7cf662',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -91,6 +91,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'phpmailer/phpmailer' => array(
+            'pretty_version' => 'v7.0.2',
+            'version' => '7.0.2.0',
+            'reference' => 'ebf1655bd5b99b3f97e1a3ec0a69e5f4cd7ea088',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../phpmailer/phpmailer',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'phpoffice/phpspreadsheet' => array(
             'pretty_version' => '2.4.3',
             'version' => '2.4.3.0',
@@ -112,7 +121,7 @@
         'priotti/api' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => 'ea49f03d16527668007dc3b7137ff9d0162d8554',
+            'reference' => '0406c1dbc408bc52639cf649a94202d62c7cf662',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

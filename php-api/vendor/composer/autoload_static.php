@@ -41,6 +41,7 @@ class ComposerStaticInit05bca7e45e88898075638714474076cd
             'Psr\\Container\\' => 14,
             'PhpOption\\' => 10,
             'PhpOffice\\PhpSpreadsheet\\' => 25,
+            'PHPMailer\\PHPMailer\\' => 20,
         ),
         'N' =>
         array (
@@ -138,6 +139,10 @@ class ComposerStaticInit05bca7e45e88898075638714474076cd
         'PhpOffice\\PhpSpreadsheet\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpoffice/phpspreadsheet/src/PhpSpreadsheet',
+        ),
+        'PHPMailer\\PHPMailer\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
         'Neomerx\\Cors\\' =>
         array (
