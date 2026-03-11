@@ -23,8 +23,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => (
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
-  const { user, role } = useAuthStore();
+  const { user, role, isInitializing } = useAuthStore();
 
+  if (isInitializing) return null; // Wait for localStorage hydration before deciding
   if (!user) return <Navigate to="/login" replace />;
   if (allowedRoles && role && !allowedRoles.includes(role)) return <Navigate to="/" replace />;
 
