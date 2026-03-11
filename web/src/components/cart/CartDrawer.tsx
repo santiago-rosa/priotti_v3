@@ -2,25 +2,55 @@ import { useCartStore } from '../../store/cartStore';
 import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { useState } from 'react';
+import { useAuthStore } from '../../store/authStore';
 
 export const CartDrawer = () => {
+    const { user } = useAuthStore();
     const { isOpen, setIsOpen, items, total, removeItem, updateQuantity, clearCart } = useCartStore();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     if (!isOpen) return null;
 
-    const handleCheckout = async () => {
+    const handleEmailCheckout = async () => {
         setIsCheckingOut(true);
         try {
-            // First save the current items just to be sure
+            // Save cart items and close order via backend (triggers email)
             await api.post('/orders/cart', { items });
-            // Then checkout
             await api.post('/orders/checkout');
-            alert('Pedido enviado correctamente!');
+
+            alert('Pedido enviado por email correctamente!');
             clearCart();
             setIsOpen(false);
         } catch (error) {
-            alert('Hubo un error al procesar el pedido. Intente nuevamente.');
+            alert('Hubo un error al procesar el pedido por email.');
+        } finally {
+            setIsCheckingOut(false);
+        }
+    };
+
+    const handleWhatsAppCheckout = async () => {
+        setIsCheckingOut(true);
+        try {
+            // Optional: Save the cart to DB before opening WA so you have a record
+            await api.post('/orders/cart', { items });
+
+            const adminPhone = import.meta.env.VITE_WHATSAPP_PHONE || '543517319531';
+
+            const message = encodeURIComponent(
+                `📦 *Nuevo Pedido Priotti*\n\n` +
+                `👤 *Cliente:* ${user?.id} - ${user?.nombre}\n\n` +
+                `🛒 *Artículos:*\n` +
+                items.map(item => `- ${item.codigo} (${item.marca}): *${item.cantidad}*`).join('\n') +
+                `\n\n💰 *Total:* $${total.toFixed(2)}`
+            );
+
+            window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
+
+            alert('Pedido enviado a WhatsApp! Recuerde presionar "Enviar" en su aplicación.');
+            clearCart();
+            setIsOpen(false);
+        } catch (error) {
+            alert('Hubo un error al preparar el mensaje de WhatsApp.');
         } finally {
             setIsCheckingOut(false);
         }
@@ -97,13 +127,23 @@ export const CartDrawer = () => {
                         <span>${total.toFixed(2)}</span>
                     </div>
 
-                    <button
-                        disabled={items.length === 0 || isCheckingOut}
-                        onClick={handleCheckout}
-                        className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                    >
-                        {isCheckingOut ? 'Procesando...' : 'Confirmar Pedido'}
-                    </button>
+                    <div className="space-y-2">
+                        <button
+                            disabled={items.length === 0 || isCheckingOut}
+                            onClick={handleEmailCheckout}
+                            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                        >
+                            Confirmar por Email
+                        </button>
+
+                        <button
+                            disabled={items.length === 0 || isCheckingOut}
+                            onClick={handleWhatsAppCheckout}
+                            className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                        >
+                            Confirmar por WhatsApp
+                        </button>
+                    </div>
                 </div>
             </div>
         </>
