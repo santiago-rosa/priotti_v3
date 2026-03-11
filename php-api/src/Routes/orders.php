@@ -122,7 +122,14 @@ $app->post('/api/orders/checkout', function (Request $request, Response $respons
         $stmt = $db->prepare("UPDATE pedidos SET estado = 'LISTO', fechapedido = NOW() WHERE idpedidos = ?");
         $stmt->execute([$pendingOrder['idpedidos']]);
 
-        // TODO: Implement email notifications if needed (similar to Node.js)
+        // Email notifications
+        $stmtClient = $db->prepare("SELECT nombre FROM clientes WHERE id = ?");
+        $stmtClient->execute([$clientId]);
+        $clientData = $stmtClient->fetch();
+        $clientName = $clientData ? $clientData['nombre'] : 'Desconocido';
+
+        $emailService = new \App\Services\EmailService();
+        $emailService->sendOrderNotification((string) $clientId, $clientName, $pendingOrder['items']);
 
         $response->getBody()->write(json_encode(['message' => 'Pedido cerrado correctamente!']));
         return $response->withHeader('Content-Type', 'application/json');
