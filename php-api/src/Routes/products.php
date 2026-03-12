@@ -14,7 +14,15 @@ $app->get('/api/products', function (Request $request, Response $response) {
 
     try {
         $db = Database::getConnection();
-        $sql = "SELECT * FROM productos WHERE vigente = 1";
+        
+        $sql = "SELECT *, 
+                CASE 
+                    WHEN stock < stock_low THEN 'red'
+                    WHEN stock < stock_medium THEN 'yellow'
+                    ELSE 'green'
+                END as stock_status
+                FROM productos 
+                WHERE vigente = 1";
         $params = [];
 
         if ($filter === 'offers') {
@@ -47,6 +55,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
             $p['precio_lista'] = (float) $p['precio_lista'];
             $p['precio_oferta'] = (float) $p['precio_oferta'];
             $p['vigente'] = (int) $p['vigente'];
+            $p['stock'] = (int) ($p['stock'] ?? 0);
         }
 
         $response->getBody()->write(json_encode(['data' => $products]));
@@ -71,10 +80,32 @@ $app->put('/api/products/{codigo}', function (Request $request, Response $respon
 
     try {
         $db = Database::getConnection();
-        $stmt = $db->prepare("UPDATE productos SET precio_oferta = ?, info = ?, fecha_modif = NOW() WHERE codigo = ?");
-        $stmt->execute([$precio_oferta, $info, $codigo]);
+        
+        // Fetch current values to keep them if not provided
+        $currentStmt = $db->prepare("SELECT precio_oferta, info, stock, stock_low, stock_medium FROM productos WHERE codigo = ?");
+        $currentStmt->execute([$codigo]);
+        $current = $currentStmt->fetch();
 
-        $response->getBody()->write(json_encode(['message' => 'Producto actualizado!']));
+        if (!$current) {
+            $response->getBody()->write(json_encode(['error' => 'Producto no encontrado']));
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $precio_oferta = isset($data['precio_oferta']) ? $data['precio_oferta'] : $current['precio_oferta'];
+        $info = isset($data['info']) ? $data['info'] : $current['info'];
+        $stock = isset($data['stock']) ? $data['stock'] : $current['stock'];
+        $stock_low = isset($data['stock_low']) ? $data['stock_low'] : $current['stock_low'];
+        $stock_medium = isset($data['stock_medium']) ? $data['stock_medium'] : $current['stock_medium'];
+
+        $stmt = $db->prepare("UPDATE productos SET precio_oferta = ?, info = ?, stock = ?, stock_low = ?, stock_medium = ?, fecha_modif = NOW() WHERE codigo = ?");
+        $stmt->execute([$precio_oferta, $info, $stock, $stock_low, $stock_medium, $codigo]);
+
+        $response->getBody()->write(json_encode([
+            'message' => 'Producto actualizado!', 
+            'stock' => $stock,
+            'stock_low' => $stock_low,
+            'stock_medium' => $stock_medium
+        ]));
         return $response->withHeader('Content-Type', 'application/json');
 
     } catch (\Exception $e) {
