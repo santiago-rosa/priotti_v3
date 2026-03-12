@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/axios';
 import { useAuthStore } from '../store/authStore';
 import { LogIn, AlertCircle } from 'lucide-react';
+import logo from '../assets/logopriotti.png';
 
 export const Login = () => {
     const [numero, setNumero] = useState('');
@@ -33,32 +34,32 @@ export const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
-                    Priotti<span className="text-primary-600">.</span>
+        <div className="min-h-screen bg-[#0A0A0A] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
+            <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+                <img src={logo} alt="Priotti Logo" className="h-24 w-auto mx-auto mb-6 brightness-110" />
+                <h2 className="text-3xl font-black text-white tracking-tighter uppercase">
+                    PRIOTTI <span className="text-primary-500">S.A.</span>
                 </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    Acceso Exclusivo para Clientes
+                <p className="mt-2 text-sm text-gray-500 font-medium">
+                    Centro de Distribución Exclusivo
                 </p>
             </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow-xl sm:rounded-xl sm:px-10 border border-gray-100">
-
+            <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-md">
+                <div className="bg-surface py-10 px-4 shadow-2xl sm:rounded-2xl sm:px-10 border border-white/5 backdrop-blur-md">
                     {error && (
-                        <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
+                        <div className="mb-6 bg-red-500/10 border-l-4 border-red-500 p-4">
                             <div className="flex items-center">
                                 <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                                <p className="text-sm text-red-700">{error}</p>
+                                <p className="text-sm text-red-200">{error}</p>
                             </div>
                         </div>
                     )}
 
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
-                            <label htmlFor="numero" className="block text-sm font-medium text-gray-700">
-                                Número de Cliente (Usuario)
+                            <label htmlFor="numero" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Número de Cliente
                             </label>
                             <div className="mt-1">
                                 <input
@@ -68,15 +69,15 @@ export const Login = () => {
                                     required
                                     value={numero}
                                     onChange={(e) => setNumero(e.target.value)}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                                    placeholder="Ej: 1234 o Administrador"
+                                    className="appearance-none block w-full px-4 py-3 bg-[#121212] border border-white/10 rounded-xl shadow-inner text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all sm:text-sm"
+                                    placeholder="Ej: 1234"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label htmlFor="cuit" className="block text-sm font-medium text-gray-700">
-                                CUIT / Contraseña
+                            <label htmlFor="cuit" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Identificación / CUIT
                             </label>
                             <div className="mt-1">
                                 <input
@@ -86,17 +87,17 @@ export const Login = () => {
                                     required
                                     value={cuit}
                                     onChange={(e) => setCuit(e.target.value)}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                                    placeholder="Ingrese su clave"
+                                    className="appearance-none block w-full px-4 py-3 bg-[#121212] border border-white/10 rounded-xl shadow-inner text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all sm:text-sm"
+                                    placeholder="••••••••"
                                 />
                             </div>
                         </div>
 
-                        <div>
+                        <div className="pt-2">
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-300 transition-colors"
+                                className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-[0_5px_20px_rgba(255,184,0,0.2)] text-sm font-black text-black bg-primary-500 hover:bg-primary-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-600 disabled:text-gray-400 transition-all uppercase tracking-widest active:scale-95"
                             >
                                 {loading ? (
                                     <span className="flex items-center">
