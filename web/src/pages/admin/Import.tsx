@@ -77,53 +77,55 @@ export const AdminImport = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-10 text-gray-200">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Actualizar Sistema</h1>
-                <p className="text-gray-600 mt-1">Sube los archivos de texto generados por el sistema de facturación para actualizar la base de datos de productos.</p>
+                <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Actualizar Sistema</h1>
+                <p className="text-gray-500 mt-2 font-medium">Sube los archivos de texto generados por el sistema de facturación para sincronizar el catálogo.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Status Card */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 col-span-1 md:col-span-2 flex justify-between items-center">
+                <div className="bg-surface p-8 rounded-2xl shadow-2xl border border-white/5 col-span-1 md:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
-                        <h3 className="font-semibold text-gray-800">Últimas actualizaciones</h3>
-                        <p className="text-sm text-gray-600 mt-2">Lista General: <span className="font-medium text-gray-900">{formatDate(status.lista)}</span></p>
-                        <p className="text-sm text-gray-600">Ofertas: <span className="font-medium text-gray-900">{formatDate(status.ofertas)}</span></p>
+                        <h3 className="font-black text-white uppercase tracking-widest text-xs border-b border-white/5 pb-2 mb-4">Estado de sincronización</h3>
+                        <div className="space-y-2">
+                            <p className="text-sm text-gray-400">Lista General: <span className="font-bold text-primary-500 ml-2">{formatDate(status.lista)}</span></p>
+                            <p className="text-sm text-gray-400">Vigencia Ofertas: <span className="font-bold text-red-500 ml-2">{formatDate(status.ofertas)}</span></p>
+                        </div>
                     </div>
                     {status.cambios && (
-                        <div className="bg-blue-50 text-blue-800 p-3 rounded-md max-w-sm text-sm border border-blue-100">
-                            <span className="font-semibold block mb-1">Últimos aumentos aplicados en:</span>
-                            {status.cambios}
+                        <div className="bg-primary-500/10 text-primary-200 p-5 rounded-xl max-w-sm text-sm border border-primary-500/20 backdrop-blur-md">
+                            <span className="font-black block mb-2 uppercase tracking-tighter text-primary-500">Últimos aumentos aplicados:</span>
+                            <p className="font-medium">{status.cambios}</p>
                         </div>
                     )}
                 </div>
 
                 {/* Ofertas Upload */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
-                    <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                        <TagIcon className="w-5 h-5 text-red-500 mr-2" />
-                        Vigencia de Ofertas
+                <div className="bg-surface p-8 rounded-2xl shadow-2xl border border-white/5 relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]"></div>
+                    <h2 className="text-lg font-black text-white mb-6 flex items-center uppercase tracking-widest">
+                        <TagIcon className="w-5 h-5 text-red-600 mr-3" />
+                        Ofertas
                     </h2>
-                    <p className="text-sm text-gray-600 mb-6">Sube el archivo <code className="bg-gray-100 px-1 py-0.5 rounded">ofertas.txt</code> para impactar los nuevos precios promocionales.</p>
-
-                    <form onSubmit={handleOfertasSubmit} className="space-y-4">
-                        <div className="border border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors">
+                    <p className="text-xs text-gray-500 mb-8 font-medium">Sube el archivo <code className="bg-black/50 text-red-400 px-2 py-1 rounded-md">ofertas.txt</code> para actualizar precios promocionales.</p>
+ 
+                    <form onSubmit={handleOfertasSubmit} className="space-y-6">
+                        <div className="border-2 border-dashed border-white/5 rounded-2xl p-8 text-center hover:border-red-500/50 hover:bg-red-500/5 transition-all cursor-pointer">
                             <input
                                 type="file"
                                 accept=".txt"
-                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                                className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-red-600 file:text-white hover:file:bg-red-500 transition-all"
                                 onChange={(e) => setOfertasFile(e.target.files?.[0] || null)}
                             />
                         </div>
                         <button
                             type="submit"
                             disabled={!ofertasFile || ofertasLoading}
-                            className="w-full bg-red-600 text-white rounded-lg py-2.5 font-medium hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex justify-center items-center"
+                            className="w-full bg-red-600 text-white rounded-xl py-4 font-black uppercase tracking-[0.2em] text-[10px] hover:bg-red-500 shadow-[0_5px_20px_rgba(220,38,38,0.2)] hover:shadow-[0_8px_30px_rgba(220,38,38,0.4)] disabled:grayscale disabled:opacity-50 transition-all flex justify-center items-center active:scale-95"
                         >
                             <Upload className="w-4 h-4 mr-2" />
-                            {ofertasLoading ? 'Procesando...' : 'Actualizar Ofertas'}
+                            {ofertasLoading ? 'Procesando...' : 'Impactar Ofertas'}
                         </button>
                     </form>
                 </div>

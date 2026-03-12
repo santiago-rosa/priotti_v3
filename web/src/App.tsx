@@ -12,7 +12,7 @@ import { AdminClients } from './pages/admin/Clients';
 import { AdminImport } from './pages/admin/Import';
 
 const Layout = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+  <div className="min-h-screen bg-[#0F0F0F] flex flex-col font-sans text-gray-200">
     <Navbar />
     <CartDrawer />
     <main className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">

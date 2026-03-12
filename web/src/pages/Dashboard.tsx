@@ -39,64 +39,71 @@ export const Dashboard = () => {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 text-gray-200">
             {/* Welcome Banner */}
-            <div className="bg-primary-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+            <div className="bg-gradient-to-r from-[#1A1A1A] to-[#262626] rounded-2xl p-10 text-white shadow-2xl relative overflow-hidden border border-white/5">
                 <div className="relative z-10">
-                    <h1 className="text-3xl font-bold mb-2">Hola, {user?.nombre}!</h1>
-                    <p className="text-primary-100 text-lg">Bienvenido al nuevo panel de {role === 'admin' ? 'administración' : 'clientes'} de Priotti.</p>
+                    <h1 className="text-4xl font-black mb-3 tracking-tighter">Hola, {user?.nombre}!</h1>
+                    <p className="text-primary-500 text-xl font-medium">Bienvenido al nuevo panel de {role === 'admin' ? 'administración' : 'clientes'} de Priotti.</p>
                 </div>
-                <div className="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
-                    <User className="w-64 h-64" />
+                <div className="absolute right-0 bottom-0 opacity-5 transform translate-x-1/4 translate-y-1/4">
+                    <User className="w-96 h-96" />
+                </div>
+                <div className="absolute top-0 right-0 p-8">
+                     <div className="w-24 h-1 bg-primary-500 rounded-full opacity-50"></div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Info & Quick Actions */}
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Acciones Rápidas</h2>
-
+                    <div className="bg-surface p-8 rounded-2xl shadow-xl border border-white/5">
+                        <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest border-b border-white/5 pb-4">Acciones Rápidas</h2>
+ 
                         <div className="space-y-4">
                             {role === 'client' && (
                                 <button
                                     onClick={handleDownloadExcel}
-                                    className="w-full flex items-center justify-between p-4 rounded-lg bg-green-50 hover:bg-green-100 text-green-700 transition-colors border border-green-200 group"
+                                    className="w-full flex items-center justify-between p-5 rounded-xl bg-primary-500/5 hover:bg-primary-500/10 text-primary-500 transition-all border border-primary-500/20 group shadow-lg"
                                 >
-                                    <div className="flex items-center font-medium">
-                                        <Download className="w-5 h-5 mr-3 text-green-600" />
+                                    <div className="flex items-center font-bold">
+                                        <Download className="w-6 h-6 mr-4 text-primary-500 group-hover:bounce" />
                                         Descargar Lista de Precios
                                     </div>
-                                    <span className="text-sm bg-green-200 text-green-800 px-2 py-1 rounded hidden sm:block group-hover:bg-green-300 transition-colors">Excel (.xlsx)</span>
+                                    <span className="text-[10px] bg-primary-500 text-black px-2 py-1 rounded-md font-black uppercase tracking-tighter">Excel</span>
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Información de Contacto</h2>
-                        <div className="space-y-4 text-gray-600">
-                            <div className="flex items-start">
-                                <MapPin className="w-5 h-5 mr-3 text-primary-500 mt-1" />
+                    <div className="bg-surface p-8 rounded-2xl shadow-xl border border-white/5">
+                        <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest border-b border-white/5 pb-4">Contacto</h2>
+                        <div className="space-y-6 text-gray-400">
+                            <div className="flex items-start group">
+                                <div className="p-3 bg-white/5 rounded-xl mr-4 group-hover:bg-primary-500/10 transition-colors">
+                                    <MapPin className="w-5 h-5 text-primary-500" />
+                                </div>
                                 <div>
-                                    <p className="font-medium text-gray-900">Ubicación</p>
-                                    <p>Villa Luro, CABA</p>
+                                    <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1">Ubicación</p>
+                                    <p className="text-gray-400">Villa Luro, CABA</p>
                                 </div>
                             </div>
-                            <div className="flex items-start">
-                                <Phone className="w-5 h-5 mr-3 text-primary-500 mt-1" />
+                            <div className="flex items-start group">
+                                <div className="p-3 bg-white/5 rounded-xl mr-4 group-hover:bg-primary-500/10 transition-colors">
+                                    <Phone className="w-5 h-5 text-primary-500" />
+                                </div>
                                 <div>
-                                    <p className="font-medium text-gray-900">Teléfonos / WhatsApp</p>
-                                    <p>11 5012-7061</p>
-                                    <p>11 6813-2613</p>
-                                    <p>11 2513-4638</p>
+                                    <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1">WhatsApp</p>
+                                    <p className="text-gray-400">11 5012-7061 / 11 6813-2613</p>
                                 </div>
                             </div>
-                            <div className="flex items-start">
-                                <Mail className="w-5 h-5 mr-3 text-primary-500 mt-1" />
+                            <div className="flex items-start group">
+                                <div className="p-3 bg-white/5 rounded-xl mr-4 group-hover:bg-primary-500/10 transition-colors">
+                                    <Mail className="w-5 h-5 text-primary-500" />
+                                </div>
                                 <div>
-                                    <p className="font-medium text-gray-900">Email</p>
-                                    <p>consultas@priotti.com.ar</p>
+                                    <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1">Email Oficial</p>
+                                    <p className="text-gray-400">consultas@priotti.com.ar</p>
                                 </div>
                             </div>
                         </div>
@@ -104,50 +111,50 @@ export const Dashboard = () => {
                 </div>
 
                 {/* Contact Form */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Envíanos tu consulta</h2>
-                    <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div className="bg-surface p-8 rounded-2xl shadow-xl border border-white/5">
+                    <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest border-b border-white/5 pb-4">Consulta Directa</h2>
+                    <form onSubmit={handleContactSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre / Empresa</label>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Nombre / Empresa</label>
                             <input
                                 type="text" required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                className="w-full px-4 py-3 bg-[#121212] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
                                 value={contactForm.name}
                                 onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Teléfono</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                    className="w-full px-4 py-3 bg-[#121212] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
                                     value={contactForm.phone}
                                     onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Email</label>
                                 <input
                                     type="email" required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                    className="w-full px-4 py-3 bg-[#121212] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
                                     value={contactForm.email}
                                     onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Mensaje o Detalle</label>
                             <textarea
                                 required rows={4}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                className="w-full px-4 py-3 bg-[#121212] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all resize-none"
                                 value={contactForm.message}
                                 onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
                             ></textarea>
                         </div>
                         <button
                             type="submit" disabled={sending}
-                            className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 transition-colors"
+                            className="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl shadow-[0_5px_20px_rgba(255,184,0,0.2)] text-black font-black bg-primary-500 hover:bg-primary-400 focus:outline-none transition-all uppercase tracking-[0.2em] text-xs active:scale-95 disabled:bg-gray-700"
                         >
                             <Send className="w-4 h-4 mr-2" />
                             {sending ? 'Enviando...' : 'Enviar Mensaje'}
