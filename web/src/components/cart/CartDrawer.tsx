@@ -15,8 +15,10 @@ export const CartDrawer = () => {
         if (!confirm('¿Desea confirmar el pedido por Email? Se enviará una copia al administrador.')) return;
         setIsCheckingOut(true);
         try {
+            // Save cart items and close order via backend (triggers email)
             await api.post('/orders/cart', { items });
             await api.post('/orders/checkout');
+
             alert('¡Pedido enviado por Email correctamente!');
             clearCart();
             setIsOpen(false);
@@ -27,22 +29,36 @@ export const CartDrawer = () => {
         }
     };
 
-    const handleWhatsAppCheckout = () => {
-        const phone = import.meta.env.VITE_WHATSAPP_PHONE || '543517319531';
-        
-        let message = `*NUEVO PEDIDO - PRIOTTI S.A.*\n\n`;
-        message += `*Cliente:* ${user?.nombre} (${user?.numero || 'S/D'})\n`;
-        message += `*Detalle:*\n`;
-        
-        items.forEach(item => {
-            message += `- ${item.cantidad}x ${item.aplicacion} [${item.codigo}] ($${item.precio.toFixed(2)})\n`;
-        });
-        
-        message += `\n*TOTAL: $${total.toFixed(2)}*\n\n`;
-        message += `_Enviado desde el catálogo digital._`;
+    const handleWhatsAppCheckout = async () => {
+        setIsCheckingOut(true);
+        try {
+            // Save the cart to DB before opening WA so we have a record
+            await api.post('/orders/cart', { items });
 
-        const encodedMessage = encodeURIComponent(message);
-        window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+            const phone = import.meta.env.VITE_WHATSAPP_PHONE || '543517319531';
+            
+            let message = `*NUEVO PEDIDO - PRIOTTI S.A.*\n\n`;
+            message += `*Cliente:* ${user?.nombre} (${user?.numero || 'S/D'})\n`;
+            message += `*Detalle:*\n`;
+            
+            items.forEach(item => {
+                message += `- ${item.cantidad}x ${item.aplicacion} [${item.codigo}] ($${item.precio.toFixed(2)})\n`;
+            });
+            
+            message += `\n*TOTAL: $${total.toFixed(2)}*\n\n`;
+            message += `_Enviado desde el catálogo digital._`;
+
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+            
+            alert('Pedido enviado a WhatsApp! Recuerde presionar "Enviar" en su aplicación.');
+            clearCart();
+            setIsOpen(false);
+        } catch (error) {
+            alert('Hubo un error al preparar el mensaje de WhatsApp.');
+        } finally {
+            setIsCheckingOut(false);
+        }
     };
 
     return (
@@ -52,7 +68,7 @@ export const CartDrawer = () => {
                 onClick={() => setIsOpen(false)}
             />
 
-            <div className="fixed inset-y-0 right-0 max-w-md w-full bg-surface shadow-[0_0_50px_rgba(0,0,0,0.5)] z-50 transform flex flex-col border-l border-white/5 transition-all duration-300">
+            <div className="fixed inset-y-0 right-0 max-w-md w-full bg-[#1A1A1A] shadow-[0_0_50px_rgba(0,0,0,0.5)] z-50 transform flex flex-col border-l border-white/5 transition-all duration-300">
                 <div className="flex items-center justify-between p-6 border-b border-white/5">
                     <h2 className="text-xl font-black flex items-center text-white tracking-widest uppercase">
                         <ShoppingBag className="mr-3 text-primary-500" />
@@ -118,7 +134,7 @@ export const CartDrawer = () => {
  
                     <div className="grid grid-cols-1 gap-3">
                         <button
-                            disabled={items.length === 0}
+                            disabled={items.length === 0 || isCheckingOut}
                             onClick={handleWhatsAppCheckout}
                             className="w-full bg-[#25D366] text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_5px_15px_rgba(37,211,102,0.2)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] transition-all hover:-translate-y-1 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:translate-y-0"
                         >
