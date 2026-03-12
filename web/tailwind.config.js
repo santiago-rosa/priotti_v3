@@ -8,11 +8,20 @@ export default {
         extend: {
             colors: {
                 primary: {
-                    50: '#f0f9ff',
-                    100: '#e0f2fe',
-                    500: '#0ea5e9',
-                    600: '#0284c7',
-                    900: '#0c4a6e',
+                    50: '#fffce6',
+                    100: '#fff7cc',
+                    200: '#fff099',
+                    300: '#ffe666',
+                    400: '#ffdb33',
+                    500: '#FFB800', // Priotti Gold
+                    600: '#e6a600',
+                    700: '#cc9300',
+                    800: '#b38100',
+                    900: '#996e00',
+                },
+                surface: {
+                    DEFAULT: '#1E1E1E',
+                    light: '#2D2D2D',
                 }
             }
         },
