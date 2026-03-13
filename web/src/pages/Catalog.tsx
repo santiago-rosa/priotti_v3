@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Settings } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Settings, Download } from 'lucide-react';
 
 interface Product {
     codigo: string;
@@ -120,6 +120,21 @@ export const Catalog = () => {
         }
     };
 
+    const handleDownloadExcel = async () => {
+        try {
+            const response = await api.get('/utils/export', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'listapriotti.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            alert('Error al descargar la lista');
+        }
+    };
+
     const handleAddToCart = (product: Product, quantity = 1) => {
         const precio = product.precio_oferta > 0 ? product.precio_oferta : product.precio_lista * coeficiente;
         addItem({
@@ -150,38 +165,48 @@ export const Catalog = () => {
                     />
                 </div>
 
-                <div className="flex space-x-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 items-center">
-                    {role === 'admin' && (
+                {user && (
+                    <div className="flex space-x-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 items-center">
+                        {role === 'admin' && (
+                            <button
+                                onClick={handleBulkUpdateThresholds}
+                                className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20 mr-2"
+                            >
+                                <Settings className="w-4 h-4 mr-2" />
+                                Bloque
+                            </button>
+                        )}
                         <button
-                            onClick={handleBulkUpdateThresholds}
-                            className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20 mr-2"
+                            onClick={() => setFilter('all')}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-[0_5px_15px_rgba(255,184,0,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
                         >
-                            <Settings className="w-4 h-4 mr-2" />
-                            Bloque
+                            <Filter className="w-4 h-4 mr-2" />
+                            Todos
                         </button>
-                    )}
-                    <button
-                        onClick={() => setFilter('all')}
-                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-[0_5px_15px_rgba(255,184,0,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
-                    >
-                        <Filter className="w-4 h-4 mr-2" />
-                        Todos
-                    </button>
-                    <button
-                        onClick={() => setFilter('offers')}
-                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-[0_5px_15px_rgba(239,68,68,0.3)]' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20'}`}
-                    >
-                        <Tag className="w-4 h-4 mr-2" />
-                        Ofertas
-                    </button>
-                    <button
-                        onClick={() => setFilter('news')}
-                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-[0_5px_15px_rgba(34,197,94,0.3)]' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20 border border-green-500/20'}`}
-                    >
-                        <Clock className="w-4 h-4 mr-2" />
-                        Novedades
-                    </button>
-                </div>
+                        <button
+                            onClick={() => setFilter('offers')}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-[0_5px_15px_rgba(239,68,68,0.3)]' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20'}`}
+                        >
+                            <Tag className="w-4 h-4 mr-2" />
+                            Ofertas
+                        </button>
+                        <button
+                            onClick={() => setFilter('news')}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-[0_5px_15px_rgba(34,197,94,0.3)]' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20 border border-green-500/20'}`}
+                        >
+                            <Clock className="w-4 h-4 mr-2" />
+                            Novedades
+                        </button>
+                        
+                        <button
+                            onClick={handleDownloadExcel}
+                            className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            Lista Excel
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Grid */}
@@ -204,7 +229,7 @@ export const Catalog = () => {
 
                         return (
                             <div key={product.codigo} className="bg-[#1A1A1A] rounded-2xl shadow-xl border border-white/5 hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
-                                {isOffer && (
+                                {user && isOffer && (
                                     <div className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg z-20 shadow-lg flex items-center uppercase tracking-widest">
                                         <Tag className="w-2 h-2 mr-1" /> OFERTA
                                     </div>
@@ -241,52 +266,56 @@ export const Catalog = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center space-x-2 mt-2">
-                                        <div className={`w-3 h-3 rounded-full shadow-sm ${
-                                            product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
-                                            product.stock_status === 'yellow' ? 'bg-yellow-400' : 
-                                            'bg-green-500'
-                                        }`} title={`Stock: ${product.stock_status}`} />
-                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-tight">
-                                            {role === 'admin' ? `Stock: ${product.stock}` : 'Disponibilidad'}
-                                        </span>
-                                        {role === 'admin' && (
-                                            <button 
-                                                onClick={() => handleUpdateStock(product)}
-                                                className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-primary-600 transition-colors"
-                                                title="Editar stock"
+                                    {user && (
+                                        <div className="flex items-center space-x-2 mt-2">
+                                            <div className={`w-3 h-3 rounded-full shadow-sm ${
+                                                product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
+                                                product.stock_status === 'yellow' ? 'bg-yellow-400' : 
+                                                'bg-green-500'
+                                            }`} title={`Stock: ${product.stock_status}`} />
+                                            <span className="text-xs font-medium text-gray-500 uppercase tracking-tight">
+                                                {role === 'admin' ? `Stock: ${product.stock}` : 'Disponibilidad'}
+                                            </span>
+                                            {role === 'admin' && (
+                                                <button 
+                                                    onClick={() => handleUpdateStock(product)}
+                                                    className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-primary-600 transition-colors"
+                                                    title="Editar stock"
+                                                >
+                                                    <Edit2 className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {user && (
+                                    <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between">
+                                        <div className="flex flex-col">
+                                            {isOffer && (
+                                                <span className="text-[10px] line-through text-gray-600 font-bold tracking-tight mb-0.5">
+                                                    ${(product.precio_lista * coeficiente).toFixed(2)}
+                                                </span>
+                                            )}
+                                            <div className="flex items-baseline">
+                                                <span className="text-xs font-black text-primary-500/80 mr-1">$</span>
+                                                <span className={`text-2xl font-black tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
+                                                    {finalPrice.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        {role === 'client' && (
+                                            <button
+                                                onClick={() => handleAddToCart(product)}
+                                                className="bg-primary-500 hover:bg-primary-400 text-black p-3 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn"
+                                                aria-label="Agregar al carrito"
                                             >
-                                                <Edit2 className="w-3 h-3" />
+                                                <ShoppingCart className="w-5 h-5 stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
                                             </button>
                                         )}
                                     </div>
-                                </div>
-
-                                <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between">
-                                    <div className="flex flex-col">
-                                        {isOffer && (
-                                            <span className="text-[10px] line-through text-gray-600 font-bold tracking-tight mb-0.5">
-                                                ${(product.precio_lista * coeficiente).toFixed(2)}
-                                            </span>
-                                        )}
-                                        <div className="flex items-baseline">
-                                            <span className="text-xs font-black text-primary-500/80 mr-1">$</span>
-                                            <span className={`text-2xl font-black tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
-                                                {finalPrice.toFixed(2)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    {role === 'client' && (
-                                        <button
-                                            onClick={() => handleAddToCart(product)}
-                                            className="bg-primary-500 hover:bg-primary-400 text-black p-3 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn"
-                                            aria-label="Agregar al carrito"
-                                        >
-                                            <ShoppingCart className="w-5 h-5 stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
-                                        </button>
-                                    )}
-                                </div>
+                                )}
                             </div>
                         );
                     })}

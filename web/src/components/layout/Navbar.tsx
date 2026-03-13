@@ -18,17 +18,22 @@ export const Navbar = () => {
         navigate('/login');
     };
 
-    const navLinks = role === 'admin'
+    const navLinks = !user 
         ? [
-            { name: 'Dashboard', path: '/' },
-            { name: 'Catálogo', path: '/catalog' },
-            { name: 'Mis Clientes', path: '/admin/clients' },
-            { name: 'Actualizar Sistema', path: '/admin/import' },
+            { name: 'Catálogo', path: '/' },
+            { name: 'Contacto', path: '/contact' },
         ]
-        : [
-            { name: 'Inicio', path: '/' },
-            { name: 'Catálogo', path: '/catalog' },
-        ];
+        : role === 'admin'
+            ? [
+                { name: 'Catálogo', path: '/' },
+                { name: 'Mis Clientes', path: '/admin/clients' },
+                { name: 'Actualizar Sistema', path: '/admin/import' },
+            ]
+            : [
+                { name: 'Catálogo', path: '/' },
+                { name: 'Mis Pedidos', path: '/orders' },
+                { name: 'Contacto', path: '/contact' },
+            ];
 
     return (
         <nav className="bg-[#0A0A0A] text-white border-b border-white/5 sticky top-0 z-40 backdrop-blur-md bg-opacity-95">
@@ -53,38 +58,49 @@ export const Navbar = () => {
                     </div>
 
                     <div className="hidden md:flex items-center space-x-6">
-                        <div className="flex items-center text-sm">
-                            <User className="h-4 w-4 mr-2" />
-                            <span className="font-medium">{user?.nombre}</span>
-                        </div>
+                        {user ? (
+                            <>
+                                <div className="flex items-center text-sm">
+                                    <User className="h-4 w-4 mr-2" />
+                                    <span className="font-medium">{user.nombre}</span>
+                                </div>
 
-                        {role === 'client' && (
-                            <button
-                                onClick={() => setIsOpen(true)}
-                                className="relative p-2 text-gray-400 hover:text-primary-500 transition-colors"
-                                aria-label="Carrito"
-                            >
-                                <ShoppingCart className="h-6 w-6" />
-                                {cartItemsCount > 0 && (
-                                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-500 rounded-full">
-                                        {cartItemsCount}
-                                    </span>
+                                {role === 'client' && (
+                                    <button
+                                        onClick={() => setIsOpen(true)}
+                                        className="relative p-2 text-gray-400 hover:text-primary-500 transition-colors"
+                                        aria-label="Carrito"
+                                    >
+                                        <ShoppingCart className="h-6 w-6" />
+                                        {cartItemsCount > 0 && (
+                                            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-500 rounded-full">
+                                                {cartItemsCount}
+                                            </span>
+                                        )}
+                                    </button>
                                 )}
-                            </button>
-                        )}
 
-                        <button
-                            onClick={handleLogout}
-                            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-red-500 hover:bg-white/5 transition-colors"
-                            aria-label="Cerrar sesión"
-                        >
-                            <LogOut className="h-5 w-5" />
-                        </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-red-500 hover:bg-white/5 transition-colors"
+                                    aria-label="Cerrar sesión"
+                                >
+                                    <LogOut className="h-5 w-5" />
+                                </button>
+                            </>
+                        ) : (
+                            <Link
+                                to="/login"
+                                className="inline-flex items-center px-4 py-2 border border-primary-500 text-sm font-black rounded-xl text-primary-500 hover:bg-primary-500 hover:text-black transition-all uppercase tracking-widest"
+                            >
+                                Iniciar Sesión
+                            </Link>
+                        )}
                     </div>
 
                     {/* Mobile menu button */}
                     <div className="flex items-center md:hidden">
-                        {role === 'client' && (
+                        {user && role === 'client' && (
                             <button
                                 onClick={() => setIsOpen(true)}
                                 className="relative p-2 mr-2 text-white"
@@ -111,10 +127,12 @@ export const Navbar = () => {
             {mobileMenuOpen && (
                 <div className="md:hidden bg-[#0A0A0A] border-b border-white/5 pb-6">
                     <div className="pt-2 px-4 pb-3 space-y-2">
-                        <div className="flex items-center px-4 py-3 text-sm font-black border-b border-white/5 mb-4 text-primary-500 uppercase tracking-widest">
-                            <User className="h-4 w-4 mr-3" />
-                            {user?.nombre}
-                        </div>
+                        {user && (
+                            <div className="flex items-center px-4 py-3 text-sm font-black border-b border-white/5 mb-4 text-primary-500 uppercase tracking-widest">
+                                <User className="h-4 w-4 mr-3" />
+                                {user.nombre}
+                            </div>
+                        )}
                         {navLinks.map(link => (
                             <Link
                                 key={link.name}
@@ -125,12 +143,22 @@ export const Navbar = () => {
                                 {link.name}
                             </Link>
                         ))}
-                        <button
-                            onClick={handleLogout}
-                            className="w-full text-left mt-4 block px-4 py-3 rounded-xl text-base font-bold text-red-500 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20"
-                        >
-                            Cerrar sesión
-                        </button>
+                        {user ? (
+                            <button
+                                onClick={handleLogout}
+                                className="w-full text-left mt-4 block px-4 py-3 rounded-xl text-base font-bold text-red-500 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20"
+                            >
+                                Cerrar sesión
+                            </button>
+                        ) : (
+                            <Link
+                                to="/login"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="mt-4 block px-4 py-3 rounded-xl text-base font-black text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-black transition-all text-center uppercase tracking-widest"
+                            >
+                                Iniciar Sesión
+                            </Link>
+                        )}
                     </div>
                 </div>
             )}

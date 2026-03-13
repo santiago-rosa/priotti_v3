@@ -12,10 +12,12 @@ use Slim\Psr7\Response as SlimResponse;
 class AuthMiddleware
 {
     private $role;
+    private $isOptional;
 
-    public function __construct($role = null)
+    public function __construct($role = null, $isOptional = false)
     {
         $this->role = $role;
+        $this->isOptional = $isOptional;
     }
 
     public function __invoke(Request $request, Handler $handler): Response
@@ -23,6 +25,9 @@ class AuthMiddleware
         $authHeader = $request->getHeaderLine('Authorization');
 
         if (!$authHeader) {
+            if ($this->isOptional) {
+                return $handler->handle($request);
+            }
             return $this->unauthorized('No token provided');
         }
 
@@ -39,6 +44,9 @@ class AuthMiddleware
             }
 
         } catch (\Exception $e) {
+            if ($this->isOptional) {
+                return $handler->handle($request);
+            }
             return $this->unauthorized('Invalid or expired token');
         }
 

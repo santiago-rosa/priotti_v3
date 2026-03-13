@@ -8,7 +8,8 @@ import { CartSync } from './components/cart/CartSync';
 
 import { Catalog } from './pages/Catalog';
 import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
+import { Contact } from './pages/Contact';
+import { Orders } from './pages/Orders';
 import { AdminClients } from './pages/admin/Clients';
 import { AdminImport } from './pages/admin/Import';
 
@@ -24,12 +25,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => (
 );
 
 // Protected Route Wrapper
-const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] | string }) => {
   const { user, role, isInitializing } = useAuthStore();
 
   if (isInitializing) return null; // Wait for localStorage hydration before deciding
   if (!user) return <Navigate to="/login" replace />;
-  if (allowedRoles && role && !allowedRoles.includes(role)) return <Navigate to="/" replace />;
+  
+  const roles = Array.isArray(allowedRoles) ? allowedRoles : (allowedRoles ? [allowedRoles] : []);
+  if (roles.length > 0 && role && !roles.includes(role)) return <Navigate to="/" replace />;
 
   return <Layout>{children}</Layout>;
 };
@@ -46,13 +49,17 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
 
+        {/* Public Routes with Layout */}
+        <Route path="/" element={<Layout><Catalog /></Layout>} />
+        <Route path="/catalog" element={<Navigate to="/" replace />} />
+        
         {/* Client Routes */}
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+        <Route path="/contact" element={<Layout><Contact /></Layout>} />
+        <Route path="/orders" element={<ProtectedRoute allowedRoles="client"><Orders /></ProtectedRoute>} />
 
         {/* Admin Routes */}
-        <Route path="/admin/clients" element={<ProtectedRoute allowedRoles={['admin']}><AdminClients /></ProtectedRoute>} />
-        <Route path="/admin/import" element={<ProtectedRoute allowedRoles={['admin']}><AdminImport /></ProtectedRoute>} />
+        <Route path="/admin/clients" element={<ProtectedRoute allowedRoles="admin"><AdminClients /></ProtectedRoute>} />
+        <Route path="/admin/import" element={<ProtectedRoute allowedRoles="admin"><AdminImport /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
