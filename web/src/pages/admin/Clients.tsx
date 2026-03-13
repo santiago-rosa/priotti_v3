@@ -112,7 +112,7 @@ export const AdminClients = () => {
                                     </td>
                                     <td className="px-6 py-5 text-sm">
                                         <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-black bg-white/5 text-gray-400 border border-white/5">
-                                            {Number((client.porcentajeaumento * 100 - 100).toFixed(0)) > 0 ? `+${(client.porcentajeaumento * 100 - 100).toFixed(0)}` : (client.porcentajeaumento * 100 - 100).toFixed(0)}%
+                                            {client.porcentajeaumento > 0 ? `+${client.porcentajeaumento}` : client.porcentajeaumento}%
                                         </span>
                                     </td>
                                     <td className="px-6 py-5">
@@ -163,8 +163,8 @@ export const AdminClients = () => {
                                             <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
  
                                         <div className="grid grid-cols-2 gap-6">
-                                            <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Coeficiente</label>
-                                                <input required step="0.01" min="0" type="number" value={formData.aumento} onChange={e => setFormData({ ...formData, aumento: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
+                                            <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Aumento (%)</label>
+                                                <input required step="0.1" type="number" value={formData.aumento} onChange={e => setFormData({ ...formData, aumento: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
  
                                             <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Estado Cuenta</label>
                                                 <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="block w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all appearance-none">

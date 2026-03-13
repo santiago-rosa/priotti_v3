@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Settings } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Settings, Download, Info } from 'lucide-react';
 
 interface Product {
     codigo: string;
@@ -16,6 +16,7 @@ interface Product {
     stock_low: number;
     stock_medium: number;
     stock_status: 'red' | 'yellow' | 'green';
+    info?: string;
 }
 
 export const Catalog = () => {
@@ -23,6 +24,7 @@ export const Catalog = () => {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'offers' | 'news'>('all');
     const [loading, setLoading] = useState(false);
+    const [selectedInfoProduct, setSelectedInfoProduct] = useState<Product | null>(null);
 
     const { role, user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
@@ -120,6 +122,21 @@ export const Catalog = () => {
         }
     };
 
+    const handleDownloadExcel = async () => {
+        try {
+            const response = await api.get('/utils/export', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'listapriotti.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            alert('Error al descargar la lista');
+        }
+    };
+
     const handleAddToCart = (product: Product, quantity = 1) => {
         const precio = product.precio_oferta > 0 ? product.precio_oferta : product.precio_lista * coeficiente;
         addItem({
@@ -150,38 +167,48 @@ export const Catalog = () => {
                     />
                 </div>
 
-                <div className="flex space-x-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 items-center">
-                    {role === 'admin' && (
+                {user && (
+                    <div className="flex space-x-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 items-center">
+                        {role === 'admin' && (
+                            <button
+                                onClick={handleBulkUpdateThresholds}
+                                className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20 mr-2"
+                            >
+                                <Settings className="w-4 h-4 mr-2" />
+                                Bloque
+                            </button>
+                        )}
                         <button
-                            onClick={handleBulkUpdateThresholds}
-                            className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20 mr-2"
+                            onClick={() => setFilter('all')}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-[0_5px_15px_rgba(255,184,0,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
                         >
-                            <Settings className="w-4 h-4 mr-2" />
-                            Bloque
+                            <Filter className="w-4 h-4 mr-2" />
+                            Todos
                         </button>
-                    )}
-                    <button
-                        onClick={() => setFilter('all')}
-                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-[0_5px_15px_rgba(255,184,0,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
-                    >
-                        <Filter className="w-4 h-4 mr-2" />
-                        Todos
-                    </button>
-                    <button
-                        onClick={() => setFilter('offers')}
-                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-[0_5px_15px_rgba(239,68,68,0.3)]' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20'}`}
-                    >
-                        <Tag className="w-4 h-4 mr-2" />
-                        Ofertas
-                    </button>
-                    <button
-                        onClick={() => setFilter('news')}
-                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-[0_5px_15px_rgba(34,197,94,0.3)]' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20 border border-green-500/20'}`}
-                    >
-                        <Clock className="w-4 h-4 mr-2" />
-                        Novedades
-                    </button>
-                </div>
+                        <button
+                            onClick={() => setFilter('offers')}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-[0_5px_15px_rgba(239,68,68,0.3)]' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20'}`}
+                        >
+                            <Tag className="w-4 h-4 mr-2" />
+                            Ofertas
+                        </button>
+                        <button
+                            onClick={() => setFilter('news')}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-[0_5px_15px_rgba(34,197,94,0.3)]' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20 border border-green-500/20'}`}
+                        >
+                            <Clock className="w-4 h-4 mr-2" />
+                            Novedades
+                        </button>
+                        
+                        <button
+                            onClick={handleDownloadExcel}
+                            className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            Lista Excel
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Grid */}
@@ -204,7 +231,7 @@ export const Catalog = () => {
 
                         return (
                             <div key={product.codigo} className="bg-[#1A1A1A] rounded-2xl shadow-xl border border-white/5 hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
-                                {isOffer && (
+                                {user && isOffer && (
                                     <div className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg z-20 shadow-lg flex items-center uppercase tracking-widest">
                                         <Tag className="w-2 h-2 mr-1" /> OFERTA
                                     </div>
@@ -239,57 +266,135 @@ export const Catalog = () => {
                                             <span className="font-bold text-gray-500 tracking-widest">RUBRO</span>
                                             <span className="font-bold text-gray-300 truncate ml-4 max-w-[120px] uppercase">{product.rubro}</span>
                                         </div>
-                                    </div>
-
-                                    <div className="flex items-center space-x-2 mt-2">
-                                        <div className={`w-3 h-3 rounded-full shadow-sm ${
-                                            product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
-                                            product.stock_status === 'yellow' ? 'bg-yellow-400' : 
-                                            'bg-green-500'
-                                        }`} title={`Stock: ${product.stock_status}`} />
-                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-tight">
-                                            {role === 'admin' ? `Stock: ${product.stock}` : 'Disponibilidad'}
-                                        </span>
-                                        {role === 'admin' && (
-                                            <button 
-                                                onClick={() => handleUpdateStock(product)}
-                                                className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-primary-600 transition-colors"
-                                                title="Editar stock"
+                                        {product.info && (
+                                            <button
+                                                onClick={() => setSelectedInfoProduct(product)}
+                                                className="w-full mt-2 flex items-center justify-center space-x-2 py-2.5 px-3 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-primary-500/20 transition-all group/info"
                                             >
-                                                <Edit2 className="w-3 h-3" />
+                                                <Info className="w-3.5 h-3.5 group-hover/info:scale-110 transition-transform" />
+                                                <span>+ Info</span>
                                             </button>
                                         )}
                                     </div>
-                                </div>
 
-                                <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between">
-                                    <div className="flex flex-col">
-                                        {isOffer && (
-                                            <span className="text-[10px] line-through text-gray-600 font-bold tracking-tight mb-0.5">
-                                                ${(product.precio_lista * coeficiente).toFixed(2)}
+                                    {user && (
+                                        <div className="flex items-center space-x-2 mt-2">
+                                            <div className={`w-3 h-3 rounded-full shadow-sm ${
+                                                product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
+                                                product.stock_status === 'yellow' ? 'bg-yellow-400' : 
+                                                'bg-green-500'
+                                            }`} title={`Stock: ${product.stock_status}`} />
+                                            <span className="text-xs font-medium text-gray-500 uppercase tracking-tight">
+                                                {role === 'admin' ? `Stock: ${product.stock}` : 'Disponibilidad'}
                                             </span>
-                                        )}
-                                        <div className="flex items-baseline">
-                                            <span className="text-xs font-black text-primary-500/80 mr-1">$</span>
-                                            <span className={`text-2xl font-black tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
-                                                {finalPrice.toFixed(2)}
-                                            </span>
+                                            {role === 'admin' && (
+                                                <button 
+                                                    onClick={() => handleUpdateStock(product)}
+                                                    className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-primary-600 transition-colors"
+                                                    title="Editar stock"
+                                                >
+                                                    <Edit2 className="w-3 h-3" />
+                                                </button>
+                                            )}
                                         </div>
-                                    </div>
-                                    
-                                    {role === 'client' && (
-                                        <button
-                                            onClick={() => handleAddToCart(product)}
-                                            className="bg-primary-500 hover:bg-primary-400 text-black p-3 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn"
-                                            aria-label="Agregar al carrito"
-                                        >
-                                            <ShoppingCart className="w-5 h-5 stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
-                                        </button>
                                     )}
                                 </div>
+
+                                {user && (
+                                    <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between">
+                                        <div className="flex flex-col">
+                                            {isOffer && (
+                                                <span className="text-[10px] line-through text-gray-600 font-bold tracking-tight mb-0.5">
+                                                    ${(product.precio_lista * coeficiente).toFixed(2)}
+                                                </span>
+                                            )}
+                                            <div className="flex items-baseline">
+                                                <span className="text-xs font-black text-primary-500/80 mr-1">$</span>
+                                                <span className={`text-2xl font-black tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
+                                                    {finalPrice.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        {role === 'client' && (
+                                            <button
+                                                onClick={() => handleAddToCart(product)}
+                                                className="bg-primary-500 hover:bg-primary-400 text-black p-3 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn"
+                                                aria-label="Agregar al carrito"
+                                            >
+                                                <ShoppingCart className="w-5 h-5 stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Modal de Información de Producto */}
+            {selectedInfoProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div 
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+                        onClick={() => setSelectedInfoProduct(null)} 
+                    />
+                    <div className="relative bg-[#1A1A1A] border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-primary-500/20 to-transparent p-6 border-b border-white/5">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="text-[10px] font-black tracking-widest text-primary-500 uppercase mb-1">{selectedInfoProduct.marca}</div>
+                                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center">
+                                        <Info className="w-5 h-5 mr-2 text-primary-500" />
+                                        Detalles del Producto
+                                    </h3>
+                                </div>
+                                <button 
+                                    onClick={() => setSelectedInfoProduct(null)}
+                                    className="p-2 hover:bg-white/5 rounded-xl text-gray-500 hover:text-white transition-colors"
+                                >
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-8">
+                            <div className="space-y-6">
+                                <div>
+                                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Información Adicional</div>
+                                    <div className="bg-black/30 p-5 rounded-2xl border border-white/5 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap italic">
+                                        {selectedInfoProduct.info}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-1">Rubro</div>
+                                        <div className="text-sm font-bold text-gray-200 uppercase">{selectedInfoProduct.rubro}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-1">Aplicación</div>
+                                        <div className="text-sm font-bold text-gray-200 uppercase">{selectedInfoProduct.aplicacion?.replace(/=/g, 'IDEM ') || 'N/A'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 bg-[#121212] border-t border-white/5 flex justify-end">
+                            <button
+                                onClick={() => setSelectedInfoProduct(null)}
+                                className="px-6 py-2.5 bg-primary-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)] active:scale-95"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

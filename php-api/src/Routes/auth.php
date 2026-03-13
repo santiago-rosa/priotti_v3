@@ -36,12 +36,13 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
         $updateStmt->execute([$user['id']]);
 
         // Sign JWT
+        $minutes = (int)($_ENV['JWT_EXPIRATION'] ?? 720);
         $payload = [
             'id' => (int)$user['id'],
             'numero' => $user['numero'],
             'role' => $user['role'] ?? 'client',
             'iat' => time(),
-            'exp' => time() + (12 * 3600)
+            'exp' => time() + ($minutes * 60)
         ];
         $token = JWT::encode($payload, $secret, 'HS256');
 

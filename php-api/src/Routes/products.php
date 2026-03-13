@@ -14,6 +14,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
 
     try {
         $db = Database::getConnection();
+        $user = $request->getAttribute('user');
         
         $sql = "SELECT *, 
                 CASE 
@@ -50,12 +51,22 @@ $app->get('/api/products', function (Request $request, Response $response) {
         $stmt->execute($params);
         $products = $stmt->fetchAll();
 
-        // Convert types (PDO often returns everything as strings)
+        // Convert types and sanitize for guest users
         foreach ($products as &$p) {
-            $p['precio_lista'] = (float) $p['precio_lista'];
-            $p['precio_oferta'] = (float) $p['precio_oferta'];
-            $p['vigente'] = (int) $p['vigente'];
-            $p['stock'] = (int) ($p['stock'] ?? 0);
+            if (!$user) {
+                // Mask sensitive info for non-logged in users
+                $p['precio_lista'] = 0;
+                $p['precio_oferta'] = 0;
+                $p['stock'] = 0;
+                $p['stock_low'] = 0;
+                $p['stock_medium'] = 0;
+                $p['stock_status'] = 'green';
+            } else {
+                $p['precio_lista'] = (float) $p['precio_lista'];
+                $p['precio_oferta'] = (float) $p['precio_oferta'];
+                $p['vigente'] = (int) $p['vigente'];
+                $p['stock'] = (int) ($p['stock'] ?? 0);
+            }
         }
 
         $response->getBody()->write(json_encode(['data' => $products]));
@@ -65,7 +76,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
         $response->getBody()->write(json_encode(['error' => 'Error: ' . $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
-})->add(new AuthMiddleware());
+})->add(new AuthMiddleware(null, true));
 
 $app->put('/api/products/{codigo}', function (Request $request, Response $response, $args) {
     $codigo = $args['codigo'];

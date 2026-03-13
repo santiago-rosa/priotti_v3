@@ -21,3 +21,20 @@ api.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+
+// Add a response interceptor to handle global errors (like 401)
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Force logout on unauthorized access
+            useAuthStore.getState().logout();
+            
+            // Redirect to login if not already there
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
