@@ -7,7 +7,13 @@ use App\Middleware\AuthMiddleware;
 require __DIR__ . '/../vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
+$dotenv->safeLoad();
+
+// Load local overrides if they exist (not committed to git)
+if (file_exists(__DIR__ . '/../.env.local')) {
+    $dotenvLocal = Dotenv\Dotenv::createMutable(__DIR__ . '/..', '.env.local');
+    $dotenvLocal->load();
+}
 
 $isDev = ($_ENV['APP_ENV'] ?? 'production') === 'development';
 

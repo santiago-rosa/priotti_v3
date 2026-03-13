@@ -19,45 +19,27 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
 
     try {
         $secret = $_ENV['JWT_SECRET'] ?? 'fallback_secret';
-
-        // 1. Check Admin Hardcoded Login
-        if ($numero === 'Administrador' && $cuit === 'Tato1432') {
-            $payload = [
-                'id' => 0,
-                'numero' => 'Admin',
-                'role' => 'admin',
-                'iat' => time(),
-                'exp' => time() + (12 * 3600)
-            ];
-            $token = JWT::encode($payload, $secret, 'HS256');
-            $response->getBody()->write(json_encode([
-                'token' => $token,
-                'role' => 'admin',
-                'user' => ['nombre' => 'Administrador']
-            ]));
-            return $response->withHeader('Content-Type', 'application/json');
-        }
-
-        // 2. Check Client DB Login
         $db = Database::getConnection();
-        $stmt = $db->prepare("SELECT id, nombre, numero, cuit, porcentajeaumento FROM clientes WHERE numero = ? LIMIT 1");
-        $stmt->execute([$numero]);
-        $cliente = $stmt->fetch();
 
-        if (!$cliente || $cliente['cuit'] !== $cuit) {
+        // Check Login (numero and cuit used as password)
+        $stmt = $db->prepare("SELECT id, nombre, numero, cuit, role, porcentajeaumento FROM clientes WHERE numero = ? LIMIT 1");
+        $stmt->execute([$numero]);
+        $user = $stmt->fetch();
+
+        if (!$user || $user['cuit'] !== $cuit) {
             $response->getBody()->write(json_encode(['error' => 'Credenciales inválidas']));
             return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
         }
 
         // Update last login (visitas and date)
         $updateStmt = $db->prepare("UPDATE clientes SET fechaUltimoLogin = NOW(), visitas = visitas + 1 WHERE id = ?");
-        $updateStmt->execute([$cliente['id']]);
+        $updateStmt->execute([$user['id']]);
 
         // Sign JWT
         $payload = [
-            'id' => (int) $cliente['id'],
-            'numero' => $cliente['numero'],
-            'role' => 'client',
+            'id' => (int)$user['id'],
+            'numero' => $user['numero'],
+            'role' => $user['role'] ?? 'client',
             'iat' => time(),
             'exp' => time() + (12 * 3600)
         ];
@@ -65,18 +47,19 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
 
         $response->getBody()->write(json_encode([
             'token' => $token,
-            'role' => 'client',
+            'role' => $user['role'] ?? 'client',
             'user' => [
-                'id' => (int) $cliente['id'],
-                'nombre' => $cliente['nombre'],
-                'numero' => $cliente['numero'],
-                'coeficiente' => (float) $cliente['porcentajeaumento']
+                'id' => (int)$user['id'],
+                'nombre' => $user['nombre'],
+                'numero' => $user['numero'],
+                'coeficiente' => 1 + ((float)($user['porcentajeaumento'] ?? 0) / 100)
             ]
         ]));
 
         return $response->withHeader('Content-Type', 'application/json');
 
-    } catch (\Exception $e) {
+    }
+    catch (\Exception $e) {
         $response->getBody()->write(json_encode(['error' => 'Error del servidor: ' . $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }

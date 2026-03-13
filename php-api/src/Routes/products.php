@@ -14,7 +14,15 @@ $app->get('/api/products', function (Request $request, Response $response) {
 
     try {
         $db = Database::getConnection();
-        $sql = "SELECT * FROM productos WHERE vigente = 1";
+        
+        $sql = "SELECT *, 
+                CASE 
+                    WHEN stock < stock_low THEN 'red'
+                    WHEN stock < stock_medium THEN 'yellow'
+                    ELSE 'green'
+                END as stock_status
+                FROM productos 
+                WHERE vigente = 1";
         $params = [];
 
         if ($filter === 'offers') {
@@ -47,6 +55,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
             $p['precio_lista'] = (float) $p['precio_lista'];
             $p['precio_oferta'] = (float) $p['precio_oferta'];
             $p['vigente'] = (int) $p['vigente'];
+            $p['stock'] = (int) ($p['stock'] ?? 0);
         }
 
         $response->getBody()->write(json_encode(['data' => $products]));
@@ -61,24 +70,81 @@ $app->get('/api/products', function (Request $request, Response $response) {
 $app->put('/api/products/{codigo}', function (Request $request, Response $response, $args) {
     $codigo = $args['codigo'];
     $data = $request->getParsedBody();
-    $precio_oferta = $data['precio_oferta'] ?? null;
-    $info = $data['info'] ?? '';
-
-    if ($precio_oferta === null || $precio_oferta < 0) {
+    if (isset($data['precio_oferta']) && $data['precio_oferta'] < 0) {
         $response->getBody()->write(json_encode(['error' => 'Precio de oferta inválido']));
         return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
     }
 
     try {
         $db = Database::getConnection();
-        $stmt = $db->prepare("UPDATE productos SET precio_oferta = ?, info = ?, fecha_modif = NOW() WHERE codigo = ?");
-        $stmt->execute([$precio_oferta, $info, $codigo]);
+        
+        // Fetch current values to keep them if not provided
+        $currentStmt = $db->prepare("SELECT precio_oferta, info, stock, stock_low, stock_medium FROM productos WHERE codigo = ?");
+        $currentStmt->execute([$codigo]);
+        $current = $currentStmt->fetch();
 
-        $response->getBody()->write(json_encode(['message' => 'Producto actualizado!']));
+        if (!$current) {
+            $response->getBody()->write(json_encode(['error' => 'Producto no encontrado']));
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $precio_oferta = isset($data['precio_oferta']) ? $data['precio_oferta'] : $current['precio_oferta'];
+        $info = isset($data['info']) ? $data['info'] : $current['info'];
+        $stock = isset($data['stock']) ? $data['stock'] : $current['stock'];
+        $stock_low = isset($data['stock_low']) ? $data['stock_low'] : $current['stock_low'];
+        $stock_medium = isset($data['stock_medium']) ? $data['stock_medium'] : $current['stock_medium'];
+
+        $stmt = $db->prepare("UPDATE productos SET precio_oferta = ?, info = ?, stock = ?, stock_low = ?, stock_medium = ?, fecha_modif = NOW() WHERE codigo = ?");
+        $stmt->execute([$precio_oferta, $info, $stock, $stock_low, $stock_medium, $codigo]);
+
+        $response->getBody()->write(json_encode([
+            'message' => 'Producto actualizado!', 
+            'stock' => $stock,
+            'stock_low' => $stock_low,
+            'stock_medium' => $stock_medium
+        ]));
         return $response->withHeader('Content-Type', 'application/json');
 
     } catch (\Exception $e) {
         $response->getBody()->write(json_encode(['error' => 'Error: ' . $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+$app->get('/api/products/brands', function (Request $request, Response $response) {
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->query("SELECT DISTINCT marca FROM productos WHERE vigente = 1 AND marca IS NOT NULL AND marca != '' ORDER BY marca ASC");
+        $brands = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $response->getBody()->write(json_encode(['data' => $brands]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+$app->put('/api/products/bulk/thresholds', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+    $marca = $data['marca'] ?? '';
+    $stock_low = isset($data['stock_low']) ? (int) $data['stock_low'] : null;
+    $stock_medium = isset($data['stock_medium']) ? (int) $data['stock_medium'] : null;
+
+    if (empty($marca) || $stock_low === null || $stock_medium === null) {
+        $response->getBody()->write(json_encode(['error' => 'Marca y umbrales son requeridos']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("UPDATE productos SET stock_low = ?, stock_medium = ?, fecha_modif = NOW() WHERE marca = ?");
+        $stmt->execute([$stock_low, $stock_medium, $marca]);
+
+        $response->getBody()->write(json_encode(['message' => "Umbrales actualizados para la marca: $marca"]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));
