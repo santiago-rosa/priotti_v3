@@ -148,3 +148,42 @@ $app->put('/api/products/bulk/thresholds', function (Request $request, Response 
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));
+
+$app->post('/api/products/list', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+    $codigos = $data['codigos'] ?? [];
+
+    if (empty($codigos)) {
+        $response->getBody()->write(json_encode(['data' => []]));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+        $placeholders = str_repeat('?,', count($codigos) - 1) . '?';
+        $sql = "SELECT *, 
+                CASE 
+                    WHEN stock < stock_low THEN 'red'
+                    WHEN stock < stock_medium THEN 'yellow'
+                    ELSE 'green'
+                END as stock_status
+                FROM productos 
+                WHERE codigo IN ($placeholders) AND vigente = 1";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute($codigos);
+        $products = $stmt->fetchAll();
+
+        foreach ($products as &$p) {
+            $p['precio_lista'] = (float) $p['precio_lista'];
+            $p['precio_oferta'] = (float) $p['precio_oferta'];
+            $p['stock'] = (int) ($p['stock'] ?? 0);
+        }
+
+        $response->getBody()->write(json_encode(['data' => $products]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware());

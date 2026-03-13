@@ -4,6 +4,7 @@ import { useAuthStore } from './store/authStore';
 
 import { Navbar } from './components/layout/Navbar';
 import { CartDrawer } from './components/cart/CartDrawer';
+import { CartSync } from './components/cart/CartSync';
 
 import { Catalog } from './pages/Catalog';
 import { Login } from './pages/Login';
@@ -15,6 +16,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-[#0F0F0F] flex flex-col font-sans text-gray-200">
     <Navbar />
     <CartDrawer />
+    <CartSync />
     <main className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
       {children}
     </main>

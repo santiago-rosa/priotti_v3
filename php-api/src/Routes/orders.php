@@ -17,6 +17,25 @@ $app->get('/api/orders', function (Request $request, Response $response) {
         $stmt->execute([$clientId]);
         $orders = $stmt->fetchAll();
 
+        // Parse items string for each order
+        foreach ($orders as &$order) {
+            $itemsArray = explode(',', trim($order['items'] ?? '', ','));
+            $jsonItems = [];
+            foreach ($itemsArray as $item) {
+                if (empty($item)) continue;
+                $parts = explode('&', $item);
+                if (count($parts) >= 3) {
+                    $jsonItems[] = [
+                        'codigo' => $parts[0],
+                        'marca' => $parts[1],
+                        'cantidad' => (int)$parts[2]
+                    ];
+                }
+            }
+            $order['items'] = $jsonItems;
+            $order['idpedidos'] = (int)$order['idpedidos'];
+        }
+
         $response->getBody()->write(json_encode(['data' => $orders]));
         return $response->withHeader('Content-Type', 'application/json');
     } catch (\Exception $e) {
