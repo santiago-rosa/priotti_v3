@@ -19,7 +19,8 @@ $app->get('/api/utils/export', function (Request $request, Response $response) {
         $stmt = $db->prepare("SELECT porcentajeaumento FROM clientes WHERE id = ?");
         $stmt->execute([$clientId]);
         $cliente = $stmt->fetch();
-        $coeficiente = floatval($cliente['porcentajeaumento'] ?? 1);
+        $porcentaje = floatval($cliente['porcentajeaumento'] ?? 0);
+        $coeficiente = 1 + ($porcentaje / 100);
 
         $stmt = $db->prepare("SELECT * FROM productos WHERE vigente != 0 ORDER BY marca ASC, rubro ASC, codigo ASC");
         $stmt->execute();
@@ -37,11 +38,16 @@ $app->get('/api/utils/export', function (Request $request, Response $response) {
 
         $row = 2;
         foreach ($productos as $p) {
+            $precio_lista = floatval($p['precio_lista'] ?? 0);
+            $precio_oferta = floatval($p['precio_oferta'] ?? 0);
+
+            $finalPrice = ($precio_oferta > 0) ? $precio_oferta : ($precio_lista * $coeficiente);
+
             $sheet->setCellValue('A' . $row, $p['codigo']);
             $sheet->setCellValue('B' . $row, $p['marca']);
             $sheet->setCellValue('C' . $row, $p['rubro']);
             $sheet->setCellValue('D' . $row, str_replace('=', 'IDEM ', $p['aplicacion'] ?? ''));
-            $sheet->setCellValue('E' . $row, round($p['precio_lista'] * $coeficiente, 2));
+            $sheet->setCellValue('E' . $row, round($finalPrice, 2));
             $row++;
         }
 
@@ -58,7 +64,8 @@ $app->get('/api/utils/export', function (Request $request, Response $response) {
         // Clean up temp file after response is sent? In PHP scripts it's harder, but sys_get_temp_dir is fine.
         return $response;
 
-    } catch (\Exception $e) {
+    }
+    catch (\Exception $e) {
         $response->getBody()->write(json_encode(['error' => 'Error generating file: ' . $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
@@ -81,7 +88,8 @@ $app->post('/api/utils/contact', function (Request $request, Response $response)
 
     if ($sent) {
         $response->getBody()->write(json_encode(['message' => 'Mensaje enviado correctamente']));
-    } else {
+    }
+    else {
         $response->getBody()->write(json_encode(['error' => 'No se pudo enviar el mensaje. Intente más tarde.']));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }

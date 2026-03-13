@@ -1,13 +1,40 @@
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/axios';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { Download, Send, Phone, MapPin, Mail, User } from 'lucide-react';
+import { Download, Send, Phone, MapPin, Mail, User, History, ChevronDown } from 'lucide-react';
+
+interface OrderItem {
+    codigo: string;
+    marca: string;
+    cantidad: number;
+}
+
+interface Order {
+    idpedidos: number;
+    fechapedido: string;
+    items: OrderItem[];
+    estado: string;
+}
 
 export const Dashboard = () => {
     const { user, role } = useAuthStore();
     const [contactForm, setContactForm] = useState({ name: user?.nombre || '', phone: '', email: '', message: '' });
     const [sending, setSending] = useState(false);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const response = await api.get('/orders');
+                setOrders(response.data.data);
+            } catch (error) {
+                console.error('Error fetching orders', error);
+            }
+        };
+        if (role === 'client') fetchOrders();
+    }, [role]);
 
     const handleDownloadExcel = async () => {
         try {
@@ -39,7 +66,7 @@ export const Dashboard = () => {
     };
 
     return (
-        <div className="space-y-8 text-gray-200">
+        <div className="space-y-8 text-gray-200 pb-20">
             {/* Welcome Banner */}
             <div className="bg-gradient-to-r from-[#1A1A1A] to-[#262626] rounded-2xl p-10 text-white shadow-2xl relative overflow-hidden border border-white/5">
                 <div className="relative z-10">
@@ -162,6 +189,59 @@ export const Dashboard = () => {
                     </form>
                 </div>
             </div>
+
+            {/* Order History */}
+            {role === 'client' && (
+                <div className="bg-surface p-8 rounded-2xl shadow-xl border border-white/5">
+                    <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest border-b border-white/5 pb-4 flex items-center">
+                        <History className="mr-3 text-primary-500" />
+                        Historial de Pedidos
+                    </h2>
+                    
+                    {orders.length === 0 ? (
+                        <div className="text-center py-10 text-gray-500">
+                            No tienes pedidos anteriores.
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {orders.map(order => (
+                                <div key={order.idpedidos} className="border border-white/5 rounded-xl overflow-hidden bg-[#1A1A1A]">
+                                    <button
+                                        onClick={() => setExpandedOrder(expandedOrder === order.idpedidos ? null : order.idpedidos)}
+                                        className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors"
+                                    >
+                                        <div className="flex items-center space-x-6">
+                                            <span className="text-[10px] font-black bg-primary-500 text-black px-2 py-1 rounded truncate">
+                                                #{order.idpedidos}
+                                            </span>
+                                            <span className="text-sm font-bold text-gray-300">
+                                                {new Date(order.fechapedido).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                {order.items.length} Artículos
+                                            </span>
+                                        </div>
+                                        <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedOrder === order.idpedidos ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    
+                                    {expandedOrder === order.idpedidos && (
+                                        <div className="p-5 bg-black/20 border-t border-white/5 space-y-2">
+                                            {order.items.map((item, idx) => (
+                                                <div key={idx} className="flex justify-between text-sm py-1 border-b border-white/5 last:border-0">
+                                                    <span className="text-gray-400">
+                                                        <span className="font-black text-primary-500/80 mr-2">{item.cantidad}x</span> 
+                                                        {item.codigo} - {item.marca}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
