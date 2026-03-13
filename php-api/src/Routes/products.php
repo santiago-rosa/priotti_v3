@@ -70,10 +70,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
 $app->put('/api/products/{codigo}', function (Request $request, Response $response, $args) {
     $codigo = $args['codigo'];
     $data = $request->getParsedBody();
-    $precio_oferta = $data['precio_oferta'] ?? null;
-    $info = $data['info'] ?? '';
-
-    if ($precio_oferta === null || $precio_oferta < 0) {
+    if (isset($data['precio_oferta']) && $data['precio_oferta'] < 0) {
         $response->getBody()->write(json_encode(['error' => 'Precio de oferta inválido']));
         return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
     }
@@ -110,6 +107,44 @@ $app->put('/api/products/{codigo}', function (Request $request, Response $respon
 
     } catch (\Exception $e) {
         $response->getBody()->write(json_encode(['error' => 'Error: ' . $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+$app->get('/api/products/brands', function (Request $request, Response $response) {
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->query("SELECT DISTINCT marca FROM productos WHERE vigente = 1 AND marca IS NOT NULL AND marca != '' ORDER BY marca ASC");
+        $brands = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $response->getBody()->write(json_encode(['data' => $brands]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+$app->put('/api/products/bulk/thresholds', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+    $marca = $data['marca'] ?? '';
+    $stock_low = isset($data['stock_low']) ? (int) $data['stock_low'] : null;
+    $stock_medium = isset($data['stock_medium']) ? (int) $data['stock_medium'] : null;
+
+    if (empty($marca) || $stock_low === null || $stock_medium === null) {
+        $response->getBody()->write(json_encode(['error' => 'Marca y umbrales son requeridos']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("UPDATE productos SET stock_low = ?, stock_medium = ?, fecha_modif = NOW() WHERE marca = ?");
+        $stmt->execute([$stock_low, $stock_medium, $marca]);
+
+        $response->getBody()->write(json_encode(['message' => "Umbrales actualizados para la marca: $marca"]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));

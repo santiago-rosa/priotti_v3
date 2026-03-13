@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2 } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Settings } from 'lucide-react';
 
 interface Product {
     codigo: string;
@@ -53,6 +53,44 @@ export const Catalog = () => {
         return () => clearTimeout(delayDebounceFn);
     }, [search, filter]);
 
+    const handleBulkUpdateThresholds = async () => {
+        try {
+            const brandsRes = await api.get('/products/brands');
+            const brands = brandsRes.data.data;
+            
+            const brandStr = brands.join(', ');
+            const marca = prompt(`Marcas disponibles:\n${brandStr}\n\nIngrese la marca para actualizar en bloque:`);
+            if (!marca || !brands.includes(marca)) {
+                if (marca) alert('Marca no válida');
+                return;
+            }
+
+            const thresholds = prompt(`Marca seleccionada: ${marca}\nIngrese nuevos umbrales (rojo, amarillo):`, '5, 15');
+            if (!thresholds) return;
+
+            const [low, medium] = thresholds.split(',').map(v => parseInt(v.trim()));
+            if (isNaN(low) || isNaN(medium)) {
+                alert('Valores inválidos');
+                return;
+            }
+
+            await api.put('/products/bulk/thresholds', {
+                marca,
+                stock_low: low,
+                stock_medium: medium
+            });
+
+            alert(`Umbrales actualizados para ${marca}`);
+            
+            // Refresh products
+            const response = await api.get('/products');
+            setProducts(response.data.data);
+        } catch (error) {
+            console.error('Error in bulk update', error);
+            alert('Error al realizar actualización en bloque');
+        }
+    };
+
     const handleUpdateStock = async (product: Product) => {
         const input = prompt(
             `Actualizar ${product.codigo}:\nStock actual: ${product.stock}\nUmbral Rojo: ${product.stock_low}\nUmbral Amarillo: ${product.stock_medium}\n\nIngrese nuevos valores separados por coma (stock, rojo, amarillo):`, 
@@ -75,8 +113,10 @@ export const Catalog = () => {
             // Refresh to get calculated status from DB
             const response = await api.get('/products');
             setProducts(response.data.data);
-        } catch (error) {
-            alert('Error al actualizar stock');
+        } catch (error: any) {
+            console.error('Error updating stock', error);
+            const msg = error.response?.data?.error || 'Error al actualizar stock';
+            alert(msg);
         }
     };
 
@@ -111,6 +151,15 @@ export const Catalog = () => {
                 </div>
 
                 <div className="flex space-x-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 items-center">
+                    {role === 'admin' && (
+                        <button
+                            onClick={handleBulkUpdateThresholds}
+                            className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20 mr-2"
+                        >
+                            <Settings className="w-4 h-4 mr-2" />
+                            Bloque
+                        </button>
+                    )}
                     <button
                         onClick={() => setFilter('all')}
                         className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-[0_5px_15px_rgba(255,184,0,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
