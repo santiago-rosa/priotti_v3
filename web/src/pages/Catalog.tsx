@@ -275,13 +275,13 @@ export const Catalog = () => {
                                 <div key={product.codigo} className="bg-[#1A1A1A] rounded-xl border border-white/5 hover:border-primary-500/50 transition-all p-3 flex items-center gap-4 group">
                                     <div className="w-16 h-16 bg-black rounded-lg overflow-hidden flex-shrink-0">
                                         <img
-                                            src={`/images/products/${product.codigo}.png`}
+                                            src={`${import.meta.env.VITE_API_URL}/products/image/${product.codigo}`}
                                             alt={product.codigo}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 const target = e.currentTarget;
                                                 if (!target.src.includes('default.png')) {
-                                                    target.src = '/images/products/default.png';
+                                                    target.src = `${import.meta.env.VITE_API_URL}/products/image/default`;
                                                 }
                                             }}
                                         />
@@ -350,13 +350,13 @@ export const Catalog = () => {
                                 <div className="w-full h-48 bg-[#121212] flex items-center justify-center group-hover:bg-[#0A0A0A] transition-colors relative overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                     <img
-                                        src={`/images/products/${product.codigo}.png`}
+                                        src={`${import.meta.env.VITE_API_URL}/products/image/${product.codigo}`}
                                         alt={product.aplicacion || product.codigo}
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 z-10"
                                         onError={(e) => {
                                             const target = e.currentTarget;
                                             if (!target.src.includes('default.png')) {
-                                                target.src = '/images/products/default.png';
+                                                target.src = `${import.meta.env.VITE_API_URL}/products/image/default`;
                                             }
                                         }}
                                     />
