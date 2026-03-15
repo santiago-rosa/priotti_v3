@@ -16,6 +16,13 @@ $app->get('/api/products', function (Request $request, Response $response) {
         $db = Database::getConnection();
         $user = $request->getAttribute('user');
         
+        // Check if stock should be visible to clients
+        $configStmt = $db->query("SELECT `value` FROM config WHERE `key` = 'show_stock_to_clients' LIMIT 1");
+        $showStockConfig = $configStmt->fetch();
+        $showStockToClients = ($showStockConfig['value'] ?? '1') === '1';
+        $isAdmin = ($user && $user->role === 'admin');
+        $params = [];
+
         $sql = "SELECT *, 
                 CASE 
                     WHEN stock < stock_low THEN 'red'
@@ -24,7 +31,6 @@ $app->get('/api/products', function (Request $request, Response $response) {
                 END as stock_status
                 FROM productos 
                 WHERE vigente = 1";
-        $params = [];
 
         if ($filter === 'offers') {
             $sql .= " AND precio_oferta > 0";
@@ -60,8 +66,13 @@ $app->get('/api/products', function (Request $request, Response $response) {
                 $p['stock'] = 0;
                 $p['stock_low'] = 0;
                 $p['stock_medium'] = 0;
-                $p['stock_status'] = 'green';
+                $p['stock_status'] = null; // Changed from 'green' to null
             } else {
+                // If not admin and config is off, hide stock status
+                if (!$isAdmin && !$showStockToClients) {
+                    $p['stock_status'] = null;
+                }
+
                 $p['precio_lista'] = (float) $p['precio_lista'];
                 $p['precio_oferta'] = (float) $p['precio_oferta'];
                 $p['vigente'] = (int) $p['vigente'];

@@ -96,3 +96,53 @@ $app->post('/api/utils/contact', function (Request $request, Response $response)
 
     return $response->withHeader('Content-Type', 'application/json');
 });
+
+$app->get('/api/config', function (Request $request, Response $response) {
+    try {
+        $db = Database::getConnection();
+        
+        // Ensure table exists
+        $db->exec("CREATE TABLE IF NOT EXISTS config (
+            `key` VARCHAR(100) PRIMARY KEY,
+            `value` TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+
+        $stmt = $db->query("SELECT `key`, `value` FROM config");
+        $config = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        // Default value if missing
+        if (!isset($config['show_stock_to_clients'])) {
+            $config['show_stock_to_clients'] = '1';
+        }
+
+        $response->getBody()->write(json_encode(['data' => $config]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware());
+
+$app->post('/api/config', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+    $key = $data['key'] ?? '';
+    $value = $data['value'] ?? '';
+
+    if (empty($key)) {
+        $response->getBody()->write(json_encode(['error' => 'Key is required']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("INSERT INTO config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?");
+        $stmt->execute([$key, $value, $value]);
+
+        $response->getBody()->write(json_encode(['message' => 'Config updated']));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));

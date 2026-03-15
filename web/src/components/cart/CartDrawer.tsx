@@ -2,6 +2,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { api } from '../../lib/axios';
+import { formatPrice } from '../../lib/utils';
 import { useState } from 'react';
 
 export const CartDrawer = () => {
@@ -35,17 +36,17 @@ export const CartDrawer = () => {
             // Save the cart to DB before opening WA so we have a record
             await api.post('/orders/cart', { items });
 
-            const phone = import.meta.env.VITE_WHATSAPP_PHONE || '543517319531';
+            const phone = import.meta.env.VITE_WHATSAPP_PHONE || '543513921731';
             
-            let message = `*NUEVO PEDIDO - PRIOTTI S.A.*\n\n`;
+            let message = `*NUEVO PEDIDO - FELIPE PRIOTTI S.A.*\n\n`;
             message += `*Cliente:* ${user?.nombre} (${user?.numero || 'S/D'})\n`;
             message += `*Detalle:*\n`;
             
             items.forEach(item => {
-                message += `- ${item.cantidad}x ${item.aplicacion} [${item.codigo}] ($${item.precio.toFixed(2)})\n`;
+                message += `- ${item.cantidad}x ${item.aplicacion} [${item.codigo}] ($${formatPrice(item.precio)})\n`;
             });
             
-            message += `\n*TOTAL: $${total.toFixed(2)}*\n\n`;
+            message += `\n*TOTAL: $${formatPrice(total)}*\n\n`;
             message += `_Enviado desde el catálogo digital._`;
 
             const encodedMessage = encodeURIComponent(message);
@@ -118,7 +119,7 @@ export const CartDrawer = () => {
                                         </button>
                                     </div>
                                     <div className="font-black text-primary-500 tracking-tighter text-lg">
-                                        ${(item.precio * item.cantidad).toFixed(2)}
+                                        ${formatPrice(item.precio * item.cantidad)}
                                     </div>
                                 </div>
                             </div>
@@ -129,7 +130,7 @@ export const CartDrawer = () => {
                 <div className="border-t border-white/5 p-6 bg-[#1A1A1A]/80 backdrop-blur-md">
                     <div className="flex justify-between items-center mb-6">
                         <span className="text-gray-400 font-bold uppercase tracking-widest text-xs">Total del Pedido</span>
-                        <span className="text-2xl font-black text-primary-500 tracking-tighter">${total.toFixed(2)}</span>
+                        <span className="text-2xl font-black text-primary-500 tracking-tighter">${formatPrice(total)}</span>
                     </div>
  
                     <div className="grid grid-cols-1 gap-3">

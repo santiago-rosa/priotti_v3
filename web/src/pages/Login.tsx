@@ -36,9 +36,9 @@ export const Login = () => {
     return (
         <div className="min-h-screen bg-[#0A0A0A] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
             <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-                <img src={logo} alt="Priotti Logo" className="h-24 w-auto mx-auto mb-6 brightness-110" />
+                <img src={logo} alt="Priotti Logo" className="h-32 w-auto mx-auto mb-6 brightness-110" />
                 <h2 className="text-3xl font-black text-white tracking-tighter uppercase">
-                    PRIOTTI <span className="text-primary-500">S.A.</span>
+                    FELIPE PRIOTTI <span className="text-primary-500">S.A.</span>
                 </h2>
                 <p className="mt-2 text-sm text-gray-500 font-medium">
                     Centro de Distribución Exclusivo

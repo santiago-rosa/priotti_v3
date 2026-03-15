@@ -38,12 +38,12 @@ export const Navbar = () => {
     return (
         <nav className="bg-[#0A0A0A] text-white border-b border-white/5 sticky top-0 z-40 backdrop-blur-md bg-opacity-95">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
+                <div className="flex justify-between h-20">
                     <div className="flex items-center">
                         <Link to="/" className="flex-shrink-0 flex items-center group">
-                            <img src={logo} alt="Priotti Logo" className="h-10 w-auto brightness-110 group-hover:scale-105 transition-transform" />
-                            <span className="ml-3 font-bold text-xl tracking-tight hidden sm:block">
-                                PRIOTTI <span className="text-primary-500 text-xs">S.A.</span>
+                            <img src={logo} alt="Priotti Logo" className="h-14 w-auto brightness-110 group-hover:scale-105 transition-transform" />
+                            <span className="ml-3 font-bold text-xl tracking-tight hidden sm:block uppercase">
+                                Felipe Priotti <span className="text-primary-500 text-xs">S.A.</span>
                             </span>
                         </Link>
 
