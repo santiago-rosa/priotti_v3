@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Settings, Download, Info } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info } from 'lucide-react';
 
 interface Product {
     codigo: string;
@@ -25,6 +25,8 @@ export const Catalog = () => {
     const [filter, setFilter] = useState<'all' | 'offers' | 'news'>('all');
     const [loading, setLoading] = useState(false);
     const [selectedInfoProduct, setSelectedInfoProduct] = useState<Product | null>(null);
+    const [editingProductInfo, setEditingProductInfo] = useState<Product | null>(null);
+    const [tempInfo, setTempInfo] = useState('');
 
     const { role, user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
@@ -119,6 +121,24 @@ export const Catalog = () => {
             console.error('Error updating stock', error);
             const msg = error.response?.data?.error || 'Error al actualizar stock';
             alert(msg);
+        }
+    };
+
+    const handleSaveInfo = async () => {
+        if (!editingProductInfo) return;
+        try {
+            await api.put(`/products/${editingProductInfo.codigo}`, { 
+                info: tempInfo 
+            });
+            alert('Información actualizada');
+            setEditingProductInfo(null);
+            
+            // Refresh products
+            const response = await api.get('/products');
+            setProducts(response.data.data);
+        } catch (error: any) {
+            console.error('Error updating info', error);
+            alert(error.response?.data?.error || 'Error al actualizar información');
         }
     };
 
@@ -254,27 +274,43 @@ export const Catalog = () => {
                                 </div>
 
                                 <div className="p-5 flex-grow">
-                                    <div className="text-[10px] font-black tracking-[0.2em] text-primary-500/60 mb-2 uppercase">{product.marca}</div>
+                                    <div className="text-xs font-black tracking-[0.2em] text-primary-500/60 mb-2 uppercase">{product.marca}</div>
                                     <h3 className="text-sm font-bold text-gray-100 mb-4 leading-snug group-hover:text-primary-500 transition-colors line-clamp-2 min-h-[2.5rem] tracking-tight">{displayApp}</h3>
                                     
                                     <div className="space-y-2 bg-black/20 p-3 rounded-xl border border-white/5">
-                                        <div className="flex justify-between items-center text-[10px]">
+                                        <div className="flex justify-between items-center text-xs">
                                             <span className="font-bold text-gray-500 tracking-widest">CÓDIGO</span>
                                             <span className="font-black text-gray-200 tabular-nums bg-white/5 px-1.5 py-0.5 rounded tracking-widest">{product.codigo}</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-[10px]">
+                                        <div className="flex justify-between items-center text-xs">
                                             <span className="font-bold text-gray-500 tracking-widest">RUBRO</span>
                                             <span className="font-bold text-gray-300 truncate ml-4 max-w-[120px] uppercase">{product.rubro}</span>
                                         </div>
-                                        {product.info && (
-                                            <button
-                                                onClick={() => setSelectedInfoProduct(product)}
-                                                className="w-full mt-2 flex items-center justify-center space-x-2 py-2.5 px-3 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-primary-500/20 transition-all group/info"
-                                            >
-                                                <Info className="w-3.5 h-3.5 group-hover/info:scale-110 transition-transform" />
-                                                <span>+ Info</span>
-                                            </button>
-                                        )}
+                                        
+                                        <div className="flex gap-2 mt-2">
+                                            {product.info && (
+                                                <button
+                                                    onClick={() => setSelectedInfoProduct(product)}
+                                                    className="flex-grow flex items-center justify-center space-x-2 py-2.5 px-3 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-primary-500/20 transition-all group/info"
+                                                >
+                                                    <Info className="w-3.5 h-3.5 group-hover/info:scale-110 transition-transform" />
+                                                    <span>+ Info</span>
+                                                </button>
+                                            )}
+                                            {role === 'admin' && (
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingProductInfo(product);
+                                                        setTempInfo(product.info || '');
+                                                    }}
+                                                    className={`py-2.5 px-3 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg border border-white/5 transition-all ${!product.info ? 'w-full flex items-center justify-center space-x-2' : ''}`}
+                                                    title="Editar Información"
+                                                >
+                                                    <Edit3 className="w-3.5 h-3.5" />
+                                                    {!product.info && <span className="text-[10px] font-black uppercase tracking-widest ml-2">Cargar Info</span>}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {user && (
@@ -345,7 +381,7 @@ export const Catalog = () => {
                         <div className="bg-gradient-to-r from-primary-500/20 to-transparent p-6 border-b border-white/5">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <div className="text-[10px] font-black tracking-widest text-primary-500 uppercase mb-1">{selectedInfoProduct.marca}</div>
+                                    <div className="text-xs font-black tracking-widest text-primary-500 uppercase mb-1">{selectedInfoProduct.marca}</div>
                                     <h3 className="text-xl font-bold text-white tracking-tight flex items-center">
                                         <Info className="w-5 h-5 mr-2 text-primary-500" />
                                         Detalles del Producto
@@ -366,7 +402,7 @@ export const Catalog = () => {
                         <div className="p-8">
                             <div className="space-y-6">
                                 <div>
-                                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Información Adicional</div>
+                                    <div className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Información Adicional</div>
                                     <div className="bg-black/30 p-5 rounded-2xl border border-white/5 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap italic">
                                         {selectedInfoProduct.info}
                                     </div>
@@ -392,6 +428,49 @@ export const Catalog = () => {
                                 className="px-6 py-2.5 bg-primary-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)] active:scale-95"
                             >
                                 Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Edición de Información (Admin) */}
+            {editingProductInfo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div 
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+                        onClick={() => setEditingProductInfo(null)} 
+                    />
+                    <div className="relative bg-[#1A1A1A] border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
+                        <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border-white/5">
+                            <h3 className="text-xl font-bold text-white tracking-tight flex items-center">
+                                <Edit3 className="w-5 h-5 mr-2 text-blue-400" />
+                                Editar Información
+                            </h3>
+                            <p className="text-gray-500 text-xs mt-1 uppercase tracking-widest font-black">Producto: {editingProductInfo.codigo}</p>
+                        </div>
+
+                        <div className="p-8">
+                            <textarea
+                                value={tempInfo}
+                                onChange={(e) => setTempInfo(e.target.value)}
+                                className="w-full h-48 bg-black/30 border border-white/10 rounded-2xl p-4 text-gray-200 text-sm focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700 resize-none"
+                                placeholder="Escribe aquí la información técnica o detalles del producto..."
+                            />
+                        </div>
+
+                        <div className="p-6 bg-[#121212] border-t border-white/5 flex justify-end space-x-3">
+                            <button
+                                onClick={() => setEditingProductInfo(null)}
+                                className="px-6 py-2.5 text-gray-500 font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSaveInfo}
+                                className="px-8 py-2.5 bg-primary-500 text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)]"
+                            >
+                                Guardar Info
                             </button>
                         </div>
                     </div>
