@@ -28,7 +28,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
                     WHEN stock < stock_low THEN 'red'
                     WHEN stock < stock_medium THEN 'yellow'
                     ELSE 'green'
-                END as stock_status
+                END as stock_status, imagen
                 FROM productos 
                 WHERE vigente = 1";
 
@@ -195,7 +195,7 @@ $app->post('/api/products/list', function (Request $request, Response $response)
                     WHEN stock < stock_low THEN 'red'
                     WHEN stock < stock_medium THEN 'yellow'
                     ELSE 'green'
-                END as stock_status
+                END as stock_status, imagen
                 FROM productos 
                 WHERE codigo IN ($placeholders) AND vigente = 1";
 
@@ -218,64 +218,88 @@ $app->post('/api/products/list', function (Request $request, Response $response)
     }
 })->add(new AuthMiddleware());
 
-$app->get('/api/products/image/{codigo}', function (Request $request, Response $response, $args) {
-    $codigo = $args['codigo'];
+// Use {codigo:.+} to allow slashes inside the product code (like FI19999/1)
+$app->get('/api/products/image/{codigo:.+}', function (Request $request, Response $response, $args) {
+    // 1. Clean the code (remove spaces)
+    $codigo = trim($args['codigo']);
     $envPath = $_ENV['PRODUCTS_IMAGES_PATH'] ?? 'Resources/fotos';
-    
-    // Structure: public_html/php-api/src/Routes/products.php
+
+
+    // 2. Resolve Site Root
     $siteRoot = realpath(__DIR__ . '/../../../');
     if (!$siteRoot) {
         $siteRoot = dirname(__DIR__, 3);
     }
-    
-    $basePath = $siteRoot . '/' . ltrim($envPath, '/');
-    
-    // Extensions to try in order
-    $extensions = ['jpg', 'png', 'jpeg', 'JPG', 'PNG', 'webp', 'GIF', 'gif'];
+
+    $basePath = rtrim($siteRoot, '/') . '/' . ltrim($envPath, '/');
     $filePath = null;
-    
-    // Try original, lowercase and uppercase variants for case-sensitive filesystems
-    $variants = [
+
+    // 3. Apply transformation rules and search variants
+    $transformed = str_replace(['/', ' '], ['-', '_'], $codigo);
+
+    $variants = array_unique([
         $codigo,
         strtolower($codigo),
-        strtoupper($codigo)
-    ];
-    $variants = array_unique($variants);
-    
+        strtoupper($codigo),
+        $transformed,
+        strtolower($transformed),
+        strtoupper($transformed)
+    ]);
+
     foreach ($variants as $variant) {
-        foreach ($extensions as $ext) {
-            $testPath = rtrim($basePath, '/') . '/' . $variant . '.' . $ext;
+        // Try exact match first if variant already has extension
+        if (strpos($variant, '.') !== false) {
+            $testPath = rtrim($basePath, '/') . '/' . $variant;
             if (file_exists($testPath)) {
                 $filePath = $testPath;
-                break 2;
+                break;
+            }
+        }
+
+        // Use glob to find ANY extension (jpg, png, JPG, etc)
+        $pattern = rtrim($basePath, '/') . '/' . $variant . '.*';
+        $matches = glob($pattern);
+        
+        if ($matches && count($matches) > 0) {
+            $filePath = $matches[0];
+            break;
+        }
+    }
+
+
+    // 4. Fallback to default
+    if (!$filePath) {
+        $fallbacks = [
+            $siteRoot . '/images/products/default.png',
+            $siteRoot . '/public/images/products/default.png',
+            rtrim($basePath, '/') . '/default.png'
+        ];
+
+        foreach ($fallbacks as $fb) {
+            if (file_exists($fb)) {
+                $filePath = $fb;
+                break;
             }
         }
     }
-    
-    // Fallback if not found
-    if (!$filePath) {
-        // Try looking in the web folder's default images as well
-        $webDefault = $siteRoot . '/images/products/default.png';
-        if (file_exists($webDefault)) {
-            $filePath = $webDefault;
-        } else {
-            // Log the failure to help debugging
-            error_log("Product image NOT FOUND for code: $codigo. Checked in: $basePath");
-            return $response->withStatus(404);
-        }
+
+    if (!$filePath || !file_exists($filePath)) {
+        return $response->withStatus(404);
     }
-    
+
+    // 5. Serve the file
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
-    $mimeType = match(strtolower($ext)) {
-        'png' => 'image/png',
-        'webp' => 'image/webp',
-        'gif' => 'image/gif',
-        default => 'image/jpeg',
-    };
-    
+    $mimeType = match (strtolower($ext)) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+            default => 'image/jpeg',
+        };
+
     $stream = fopen($filePath, 'rb');
     return $response
-        ->withHeader('Content-Type', $mimeType)
-        ->withHeader('Cache-Control', 'public, max-age=86400')
-        ->withBody(new \Slim\Psr7\Stream($stream));
+    ->withHeader('Content-Type', $mimeType)
+    ->withHeader('Cache-Control', 'public, max-age=86400')
+    ->withBody(new \Slim\Psr7\Stream($stream));
 });
