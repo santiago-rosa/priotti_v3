@@ -7,8 +7,16 @@ import { api } from '../../lib/axios';
 export const CartSync = () => {
     const { items, loadCart } = useCartStore();
     const { user, role } = useAuthStore();
+    const initialSyncDone = useRef(false);
     const isFirstRun = useRef(true);
     const syncTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+    // Reset sync flag on logout
+    useEffect(() => {
+        if (!user) {
+            initialSyncDone.current = false;
+        }
+    }, [user]);
 
     // 1. Initial Load from DB on Login/Mount
     useEffect(() => {
@@ -41,7 +49,7 @@ export const CartSync = () => {
                             aplicacion: p.aplicacion?.replace(/=/g, 'IDEM ') || '',
                             precio: parseFloat(precio.toFixed(2)),
                             cantidad: dbItem.cantidad,
-                            imagen: p.codigo
+                            imagen: p.imagen || p.codigo
                         };
                     }).filter(Boolean) as CartItem[];
 
@@ -54,10 +62,14 @@ export const CartSync = () => {
             }
         };
 
-        if (user && role === 'client' && items.length === 0) {
-            syncFromDB();
+        if (user && role === 'client' && !initialSyncDone.current) {
+            const shouldSync = items.length === 0;
+            initialSyncDone.current = true;
+            if (shouldSync) {
+                syncFromDB();
+            }
         }
-    }, [user, role, items.length, loadCart]); // Run when user logs in or cart is empty
+    }, [user, role, items.length, loadCart]); // Run when user logs in or cart is evaluated, but only once
 
     // 2. Sync to DB on change (Debounced)
     useEffect(() => {
