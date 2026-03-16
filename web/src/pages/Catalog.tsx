@@ -3,7 +3,7 @@ import { api } from '../lib/axios';
 import { formatPrice } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X } from 'lucide-react';
 
 interface Product {
     codigo: string;
@@ -28,6 +28,8 @@ export const Catalog = () => {
     const [selectedInfoProduct, setSelectedInfoProduct] = useState<Product | null>(null);
     const [editingProductInfo, setEditingProductInfo] = useState<Product | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
     const [tempInfo, setTempInfo] = useState('');
 
     const { role, user } = useAuthStore();
@@ -277,7 +279,8 @@ export const Catalog = () => {
                                         <img
                                             src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
                                             alt={product.codigo}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover cursor-zoom-in hover:opacity-80 transition-opacity"
+                                            onClick={() => setSelectedImage(`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`)}
                                             onError={(e) => {
                                                 const target = e.currentTarget;
                                                 if (!target.src.includes('default.png')) {
@@ -352,7 +355,8 @@ export const Catalog = () => {
                                     <img
                                         src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
                                         alt={product.aplicacion || product.codigo}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 z-10"
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 z-10 cursor-zoom-in"
+                                        onClick={() => setSelectedImage(`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`)}
                                         onError={(e) => {
                                             const target = e.currentTarget;
                                             if (!target.src.includes('default.png')) {
@@ -566,6 +570,30 @@ export const Catalog = () => {
                                 Guardar Info
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {selectedImage && (
+                <div 
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <button 
+                        className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all hover:rotate-90 z-[110]"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <X className="w-8 h-8" />
+                    </button>
+                    
+                    <div 
+                        className="relative max-w-5xl w-full h-full flex items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img 
+                            src={selectedImage} 
+                            alt="Full size" 
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                        />
                     </div>
                 </div>
             )}
