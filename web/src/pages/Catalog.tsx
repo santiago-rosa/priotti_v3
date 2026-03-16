@@ -292,7 +292,7 @@ export const Catalog = () => {
                                     
                                     <div className="flex-grow min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-[11px] font-black text-primary-500 bg-primary-500/10 px-1.5 py-0.5 rounded tracking-tighter uppercase whitespace-nowrap">
+                                            <span className="text-[15px] font-black text-primary-500 bg-primary-500/10 px-1.5 py-0.5 rounded tracking-tighter uppercase whitespace-nowrap">
                                                 {product.codigo}
                                             </span>
                                             <span className="text-[10px] font-bold text-gray-400 uppercase truncate">
