@@ -56,7 +56,7 @@ export const Contact = () => {
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1.5 pt-1">Ubicación</p>
-                                    <p className="text-gray-400 text-lg">Villa Luro, CABA</p>
+                                    <p className="text-gray-400 text-lg">Lavalleja 1430, Cordoba Capital, Cordoba</p>
                                 </div>
                             </div>
                             <div className="flex items-start group">
@@ -65,7 +65,7 @@ export const Contact = () => {
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1.5 pt-1">WhatsApp</p>
-                                    <p className="text-gray-400 text-lg font-mono">11 5012-7061 / 11 6813-2613</p>
+                                    <p className="text-gray-400 text-lg font-mono">+54 351 392-1731</p>
                                 </div>
                             </div>
                             <div className="flex items-start group">
@@ -74,7 +74,7 @@ export const Contact = () => {
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1.5 pt-1">Email Oficial</p>
-                                    <p className="text-gray-400 text-lg">consultas@priotti.com.ar</p>
+                                    <p className="text-gray-400 text-lg text-primary-500">fpriotti@felipepriotti.com.ar</p>
                                 </div>
                             </div>
                         </div>
