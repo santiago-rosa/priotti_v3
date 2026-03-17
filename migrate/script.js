@@ -9,7 +9,7 @@ const chalk = require('chalk');
 const API_URL = process.env.API_URL || 'http://localhost:8080/api';
 const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_CUID = process.env.ADMIN_CUID;
-const LISTAS_PATH = process.env.LISTAS_PATH || './../../';
+const LISTAS_PATH = process.env.LISTAS_PATH || './listas';
 
 async function main() {
     console.clear();
@@ -22,35 +22,52 @@ async function main() {
         const searchPath = path.resolve(LISTAS_PATH);
         console.log(chalk.gray(`Buscando archivos .xls en: ${searchPath}`));
 
-        let files = [];
+        let allFiles = [];
         if (fs.existsSync(searchPath)) {
-            files = fs.readdirSync(searchPath)
+            allFiles = fs.readdirSync(searchPath)
                 .filter(f => f.toLowerCase().endsWith('.xls'))
                 .sort((a, b) => b.localeCompare(a));
         }
 
-        if (files.length === 0) {
-            console.error(chalk.red(`\nError: No se encontraron archivos .xls en la ruta: ${searchPath}`));
+        if (allFiles.length < 2) {
+            console.error(chalk.red(`\nError: Se necesitan al menos 2 archivos .xls en la carpeta 'listas' para realizar la comparación.`));
+            console.log(chalk.yellow(`Archivos encontrados: ${allFiles.length}`));
             return;
         }
 
-        const newFileName = files[0];
-        const actualFileName = files.length > 1 ? files[1] : null;
+        // Selección de archivos
+        console.log(chalk.yellow('Selección de archivos para comparar:'));
+        
+        const { newFileName } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'newFileName',
+                message: 'Seleccione el archivo NUEVO (el que tiene los datos actuales):',
+                choices: allFiles
+            }
+        ]);
 
-        console.log(chalk.yellow('Archivo detectado para procesar:'));
-        console.log(`  ${chalk.gray('Nuevo (Actual):')} ${chalk.green(newFileName)}`);
-        if (actualFileName) {
-            console.log(`  ${chalk.gray('Base (Viejo):')} ${chalk.white(actualFileName)}\n`);
-        } else {
-            console.log(`  ${chalk.gray('Base (Viejo):')} ${chalk.italic.blue('No detectado (se usará modo de archivo único)')}\n`);
-        }
+        const otherFiles = allFiles.filter(f => f !== newFileName);
+
+        const { oldFileName } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'oldFileName',
+                message: 'Seleccione el archivo VIEJO (para buscar diferencias):',
+                choices: otherFiles
+            }
+        ]);
+        const actualFileName = oldFileName;
+
+        console.log(`\n  ${chalk.gray('Nuevo (Actual):')} ${chalk.green(newFileName)}`);
+        console.log(`  ${chalk.gray('Base (Viejo):')} ${chalk.white(actualFileName)}\n`);
 
         // 2. Construir listas
         console.log(chalk.blue('Analizando datos... (esto puede tardar unos segundos)'));
         let newList = buildListFromExcel(path.join(LISTAS_PATH, newFileName));
-        let actualList = actualFileName ? buildListFromExcel(path.join(LISTAS_PATH, actualFileName)) : {};
+        let actualList = buildListFromExcel(path.join(LISTAS_PATH, actualFileName));
         
-        // 3. Generar Diff preliminar
+        // 3. Generar Diff
         let diffData = buildUpdateData(actualList, newList);
         
         // --- MENU INTERACTIVO ---
@@ -62,12 +79,10 @@ async function main() {
                     name: 'choice',
                     message: '¿Qué desea hacer?',
                     choices: [
-                        { name: '📊 Ver resumen de cambios (Cantidades)', value: 'summary', disabled: !actualFileName ? 'Requiere 2 archivos' : false },
+                        { name: '📊 Ver resumen de cambios (Cantidades)', value: 'summary' },
                         { name: '🏷️  Ver marcas afectadas', value: 'brands' },
-                        { name: '🔍 Ver listado a afectar (Precios)', value: 'details', disabled: !actualFileName ? 'Requiere 2 archivos' : false },
-                        { name: '🚀 SINCRONIZACIÓN INTELIGENTE (1 solo archivo)', value: 'single' },
-                        { name: '📥 SINCRONIZACIÓN TOTAL (Cargar todo desde cero)', value: 'full' },
-                        { name: '🚀 ACTUALIZAR SÓLO CAMBIOS', value: 'update', disabled: !actualFileName ? 'Requiere 2 archivos' : false },
+                        { name: '🔍 Ver listado de cambios de precio', value: 'details' },
+                        { name: '🚀 ACTUALIZAR WEB CON ESTOS CAMBIOS', value: 'update' },
                         { name: '❌ Salir', value: 'exit' }
                     ]
                 }
@@ -82,33 +97,6 @@ async function main() {
                     break;
                 case 'details':
                     showDetailedChanges(diffData, actualList, newList);
-                    break;
-                case 'single':
-                    const singleData = {
-                        insert: Object.values(newList),
-                        update: Object.values(newList), // Enviamos todo a update también
-                        delete: [],
-                        novelties: [...new Set(Object.values(newList).map(i => i.marca))]
-                    };
-                    console.log(chalk.yellow(`\nSe procesarán ${chalk.bold(singleData.insert.length)} productos del archivo actual.`));
-                    const confirmedSingle = await confirmUpdate(singleData, false);
-                    if (confirmedSingle) {
-                        await performUpdate(singleData);
-                        exit = true;
-                    }
-                    break;
-                case 'full':
-                    const fullData = {
-                        insert: Object.values(newList),
-                        update: [],
-                        delete: [], // En sync total no borramos, o podríamos borrar todo lo que no esté en el archivo
-                        novelties: [...new Set(Object.values(newList).map(i => i.marca))]
-                    };
-                    const confirmedFull = await confirmUpdate(fullData, true);
-                    if (confirmedFull) {
-                        await performUpdate(fullData);
-                        exit = true;
-                    }
                     break;
                 case 'update':
                     const confirmed = await confirmUpdate(diffData);
@@ -174,8 +162,8 @@ function showDetailedChanges(data, oldList, newList) {
                 `${chalk.gray((index + 1).toString().padEnd(5))} | ` +
                 `${chalk.cyan(item.codigo.padEnd(15))} | ` +
                 `${chalk.white(newItem.marca.padEnd(15))} | ` +
-                `${chalk.red(('$' + oldItem.precio).padEnd(12))} | ` +
-                `${chalk.green('$' + newItem.precio)}`
+                `${chalk.red(('$' + (oldItem.precio || 0)).padEnd(12))} | ` +
+                `${chalk.green('$' + (newItem.precio || 0))}`
             );
         });
     }
@@ -191,14 +179,9 @@ function showDetailedChanges(data, oldList, newList) {
     console.log(chalk.gray('\n----------------------------------------------\n'));
 }
 
-async function confirmUpdate(data, isFullSync = false) {
-    console.log(chalk.bgRed.white.bold(isFullSync ? '\n ⚠️  MODO SINCRONIZACIÓN TOTAL ' : '\n ATENCIÓN '));
-    if (isFullSync) {
-        console.log(chalk.red(`ESTA OPERACIÓN CARGARÁ ${chalk.bold(data.insert.length)} PRODUCTOS COMO NUEVOS.`));
-        console.log(chalk.gray('Útil para inicializar la base de datos o corregir inconsistencias.'));
-    } else {
-        console.log(`Se van a modificar ${chalk.bold(data.insert.length + data.update.length + data.delete.length)} registros en la base de datos de Priotti v3.`);
-    }
+async function confirmUpdate(data) {
+    console.log(chalk.bgRed.white.bold('\n ATENCIÓN '));
+    console.log(`Se van a modificar ${chalk.bold(data.insert.length + data.update.length + data.delete.length)} registros en la base de datos de Priotti v3.`);
     
     const { confirm } = await inquirer.prompt([
         {
