@@ -39,7 +39,7 @@ export const CartDrawer = () => {
             const phone = import.meta.env.VITE_WHATSAPP_PHONE || '543513921731';
             
             let message = `*NUEVO PEDIDO - FELIPE PRIOTTI S.A.*\n\n`;
-            message += `*Cliente:* ${user?.nombre} (${user?.numero || 'S/D'})\n`;
+            message += `*Cliente:* ${user?.nombre} [Cod: ${user?.numero || 'S/D'}]\n`;
             message += `*Detalle:*\n`;
             
             items.forEach(item => {

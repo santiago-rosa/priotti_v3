@@ -112,18 +112,18 @@ class EmailService
         }
     }
 
-    public function sendOrderNotification(string $clientId, string $clientName, string $itemsString): bool
+    public function sendOrderNotification(string $clientCode, string $clientName, string $itemsString): bool
     {
         try {
             $this->mail->clearAddresses();
             
             $this->addAdminRecipients();
 
-            $this->mail->Subject = 'Pedido de Cliente numero: ' . rtrim($clientId) . ' - ' . rtrim($clientName);
+            $this->mail->Subject = 'Pedido de Cliente Cod: ' . rtrim($clientCode) . ' - ' . rtrim($clientName);
             
             // Translate the "codigo&marca&cant,..." string into HTML table
             $body = "<h2>Nuevo Pedido</h2>";
-            $body .= "<p><strong>Cliente:</strong> $clientId - $clientName</p>";
+            $body .= "<p><strong>Cliente:</strong> $clientName [Código: $clientCode]</p>";
             $body .= "<h3>Artículos:</h3>";
             $body .= "<table border='1' cellpadding='5' style='border-collapse: collapse;'>";
             $body .= "<thead><tr><th>Código</th><th>Marca</th><th>Cantidad</th></tr></thead><tbody>";
@@ -143,7 +143,7 @@ class EmailService
             $body .= "</tbody></table>";
 
             $this->mail->Body = $body;
-            $this->mail->AltBody = "Nuevo Pedido: Cliente $clientId - $clientName\n\nArtículos: \n" . str_replace(['&', ','], [' - ', "\n"], $itemsString);
+            $this->mail->AltBody = "Nuevo Pedido: Cliente [Cod: $clientCode] - $clientName\n\nArtículos: \n" . str_replace(['&', ','], [' - ', "\n"], $itemsString);
 
             return $this->mail->send();
 
