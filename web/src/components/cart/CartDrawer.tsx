@@ -52,6 +52,9 @@ export const CartDrawer = () => {
             const encodedMessage = encodeURIComponent(message);
             window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
             
+            // Mark the order as checkout/finished in DB so it doesn't reappear
+            await api.post('/orders/checkout');
+
             alert('Pedido enviado a WhatsApp! Recuerde presionar "Enviar" en su aplicación.');
             clearCart();
             setIsOpen(false);
