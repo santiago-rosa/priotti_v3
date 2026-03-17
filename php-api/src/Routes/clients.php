@@ -10,8 +10,31 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 // GET /api/clients (Admin only)
 $app->get('/api/clients', function (Request $request, Response $response) {
     try {
+        $queryParams = $request->getQueryParams();
+        $search = $queryParams['search'] ?? '';
+        $page = (int) ($queryParams['page'] ?? 1);
+        $limit = (int) ($queryParams['limit'] ?? 20);
+        $offset = ($page - 1) * $limit;
+
         $db = Database::getConnection();
-        $stmt = $db->query("SELECT * FROM clientes ORDER BY nombre ASC");
+        
+        $params = [];
+        $where = "";
+        if (!empty($search)) {
+            $where = " WHERE nombre LIKE ? OR numero LIKE ? OR email LIKE ?";
+            $s = "%$search%";
+            $params = [$s, $s, $s];
+        }
+
+        // Get total count for pagination
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM clientes" . $where);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        // Get paginated results
+        $sql = "SELECT * FROM clientes" . $where . " ORDER BY nombre ASC LIMIT $limit OFFSET $offset";
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         $clients = $stmt->fetchAll();
 
         // Convert types
@@ -21,10 +44,18 @@ $app->get('/api/clients', function (Request $request, Response $response) {
             $c['visitas'] = (int) $c['visitas'];
         }
 
-        $response->getBody()->write(json_encode(['data' => $clients]));
+        $response->getBody()->write(json_encode([
+            'data' => $clients,
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit,
+                'last_page' => ceil($total / $limit)
+            ]
+        ]));
         return $response->withHeader('Content-Type', 'application/json');
     } catch (\Exception $e) {
-        $response->getBody()->write(json_encode(['error' => 'Server error']));
+        $response->getBody()->write(json_encode(['error' => 'Server error: ' . $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));

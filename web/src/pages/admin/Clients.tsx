@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../../lib/axios';
-import { UserPlus, Edit2, Shield, User } from 'lucide-react';
+import { UserPlus, Edit2, Shield, User, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const AdminClients = () => {
     const [clients, setClients] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
+    const [meta, setMeta] = useState<any>({ total: 0, page: 1, last_page: 1 });
 
     // Modal State
     const [showModal, setShowModal] = useState(false);
@@ -13,14 +16,28 @@ export const AdminClients = () => {
     const [formData, setFormData] = useState({ nombre: '', numero: '', cuit: '', email: '', aumento: '0', estado: 'ACTIVO' });
 
     useEffect(() => {
-        fetchClients();
-    }, []);
+        setPage(1);
+    }, [searchTerm]);
 
-    const fetchClients = async () => {
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchClients(page, searchTerm);
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [page, searchTerm]);
+
+    const fetchClients = async (p = page, search = searchTerm) => {
         setLoading(true);
         try {
-            const res = await api.get('/clients');
+            const res = await api.get('/clients', {
+                params: {
+                    page: p,
+                    search: search,
+                    limit: 20
+                }
+            });
             setClients(res.data.data);
+            setMeta(res.data.meta);
         } catch (error) {
             console.error(error);
         } finally {
@@ -78,6 +95,24 @@ export const AdminClients = () => {
                 </button>
             </div>
 
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="relative flex-1 group w-full">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary-500 transition-colors" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre, número o email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-surface border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-600"
+                    />
+                </div>
+                {meta.total > 0 && (
+                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-surface border border-white/5 px-4 py-4 rounded-2xl h-full flex items-center">
+                        Encontrados: <span className="text-primary-500 ml-2">{meta.total}</span>
+                    </div>
+                )}
+            </div>
+
             <div className="bg-surface rounded-2xl shadow-2xl border border-white/5 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-white/5">
@@ -131,6 +166,29 @@ export const AdminClients = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Pagination */}
+            {!loading && meta.last_page > 1 && (
+                <div className="flex justify-center items-center space-x-4 pb-8">
+                    <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="p-3 rounded-xl bg-surface border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-surface border border-white/5 px-4 py-2 rounded-lg">
+                        Página <span className="text-primary-500">{page}</span> de <span className="text-white">{meta.last_page}</span>
+                    </div>
+                    <button
+                        onClick={() => setPage(p => Math.min(meta.last_page, p + 1))}
+                        disabled={page === meta.last_page}
+                        className="p-3 rounded-xl bg-surface border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
 
             {/* Modal */}
             {showModal && (
