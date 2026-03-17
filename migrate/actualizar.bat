@@ -1,1 +1,3 @@
-node script
+@echo off
+node script.js
+pause
