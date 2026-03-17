@@ -29,24 +29,26 @@ async function main() {
                 .sort((a, b) => b.localeCompare(a));
         }
 
-        if (files.length < 2) {
-            console.error(chalk.red(`\nError: Se necesitan al menos 2 archivos .xls para comparar.`));
-            console.log(chalk.yellow(`Archivos encontrados en la ruta: ${files.length}`));
-            console.log(chalk.gray(`Asegúrate de que los archivos tengan el formato AAAAMMDDHHMM.xls y estén en: ${searchPath}\n`));
+        if (files.length === 0) {
+            console.error(chalk.red(`\nError: No se encontraron archivos .xls en la ruta: ${searchPath}`));
             return;
         }
 
-        const actualFileName = files[1];
         const newFileName = files[0];
+        const actualFileName = files.length > 1 ? files[1] : null;
 
-        console.log(chalk.yellow('Detectados archivos para comparar:'));
-        console.log(`  ${chalk.gray('Base (Viejo):')} ${chalk.white(actualFileName)}`);
-        console.log(`  ${chalk.gray('Nuevo (Actual):')} ${chalk.green(newFileName)}\n`);
+        console.log(chalk.yellow('Archivo detectado para procesar:'));
+        console.log(`  ${chalk.gray('Nuevo (Actual):')} ${chalk.green(newFileName)}`);
+        if (actualFileName) {
+            console.log(`  ${chalk.gray('Base (Viejo):')} ${chalk.white(actualFileName)}\n`);
+        } else {
+            console.log(`  ${chalk.gray('Base (Viejo):')} ${chalk.italic.blue('No detectado (se usará modo de archivo único)')}\n`);
+        }
 
         // 2. Construir listas
         console.log(chalk.blue('Analizando datos... (esto puede tardar unos segundos)'));
-        let actualList = buildListFromExcel(path.join(LISTAS_PATH, actualFileName));
         let newList = buildListFromExcel(path.join(LISTAS_PATH, newFileName));
+        let actualList = actualFileName ? buildListFromExcel(path.join(LISTAS_PATH, actualFileName)) : {};
         
         // 3. Generar Diff preliminar
         let diffData = buildUpdateData(actualList, newList);
@@ -60,10 +62,12 @@ async function main() {
                     name: 'choice',
                     message: '¿Qué desea hacer?',
                     choices: [
-                        { name: '📊 Ver resumen de cambios (Cantidades)', value: 'summary' },
+                        { name: '📊 Ver resumen de cambios (Cantidades)', value: 'summary', disabled: !actualFileName ? 'Requiere 2 archivos' : false },
                         { name: '🏷️  Ver marcas afectadas', value: 'brands' },
+                        { name: '🔍 Ver listado a afectar (Precios)', value: 'details', disabled: !actualFileName ? 'Requiere 2 archivos' : false },
+                        { name: '🚀 SINCRONIZACIÓN INTELIGENTE (1 solo archivo)', value: 'single' },
                         { name: '📥 SINCRONIZACIÓN TOTAL (Cargar todo desde cero)', value: 'full' },
-                        { name: '🚀 ACTUALIZAR SÓLO CAMBIOS', value: 'update' },
+                        { name: '🚀 ACTUALIZAR SÓLO CAMBIOS', value: 'update', disabled: !actualFileName ? 'Requiere 2 archivos' : false },
                         { name: '❌ Salir', value: 'exit' }
                     ]
                 }
@@ -75,6 +79,23 @@ async function main() {
                     break;
                 case 'brands':
                     showBrands(diffData);
+                    break;
+                case 'details':
+                    showDetailedChanges(diffData, actualList, newList);
+                    break;
+                case 'single':
+                    const singleData = {
+                        insert: Object.values(newList),
+                        update: Object.values(newList), // Enviamos todo a update también
+                        delete: [],
+                        novelties: [...new Set(Object.values(newList).map(i => i.marca))]
+                    };
+                    console.log(chalk.yellow(`\nSe procesarán ${chalk.bold(singleData.insert.length)} productos del archivo actual.`));
+                    const confirmedSingle = await confirmUpdate(singleData, false);
+                    if (confirmedSingle) {
+                        await performUpdate(singleData);
+                        exit = true;
+                    }
                     break;
                 case 'full':
                     const fullData = {
@@ -129,6 +150,45 @@ function showBrands(data) {
         }
     }
     console.log(chalk.gray('-------------------------------------\n'));
+}
+
+function showDetailedChanges(data, oldList, newList) {
+    console.log(chalk.bold.white('\n--- DETALLE DE CAMBIOS (CAMBIOS DE PRECIO) ---'));
+    
+    const priceChanges = data.update.filter(item => {
+        const oldItem = oldList[item.codigo];
+        const newItem = newList[item.codigo];
+        return oldItem && newItem && oldItem.precio !== newItem.precio;
+    });
+
+    if (priceChanges.length === 0) {
+        console.log(chalk.gray('No se detectaron cambios de precio en los artículos existentes.'));
+    } else {
+        console.log(chalk.gray(`${'#'.padEnd(5)} | ${'CÓDIGO'.padEnd(15)} | ${'MARCA'.padEnd(15)} | ${'PRECIO ANT.'.padEnd(12)} | ${'PRECIO NUEVO'}`));
+        console.log(chalk.gray('-'.repeat(75)));
+        
+        priceChanges.forEach((item, index) => {
+            const oldItem = oldList[item.codigo];
+            const newItem = newList[item.codigo];
+            console.log(
+                `${chalk.gray((index + 1).toString().padEnd(5))} | ` +
+                `${chalk.cyan(item.codigo.padEnd(15))} | ` +
+                `${chalk.white(newItem.marca.padEnd(15))} | ` +
+                `${chalk.red(('$' + oldItem.precio).padEnd(12))} | ` +
+                `${chalk.green('$' + newItem.precio)}`
+            );
+        });
+    }
+
+    if (data.insert.length > 0) {
+        console.log(chalk.bold.white(`\n--- NUEVOS PRODUCTOS A CARGAR (${data.insert.length}) ---`));
+        data.insert.slice(0, 10).forEach((item, index) => {
+            console.log(`${chalk.gray((index + 1).toString().padEnd(5))} | ${chalk.green('[NUEVO]')} ${chalk.cyan(item.codigo.padEnd(12))} | ${chalk.white(item.marca.padEnd(15))} | Precio: ${chalk.green('$' + item.precio)}`);
+        });
+        if (data.insert.length > 10) console.log(chalk.gray(`... y ${data.insert.length - 10} productos más.`));
+    }
+
+    console.log(chalk.gray('\n----------------------------------------------\n'));
 }
 
 async function confirmUpdate(data, isFullSync = false) {
@@ -252,7 +312,7 @@ function buildListFromExcel(filename) {
     const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
     const json = {};
 
-    xlData.forEach(row => {
+    xlData.forEach((row, index) => {
         if (!row.arti) return;
         const codigo = (row.arti + '').trim();
         const imagen = codigo.replace(/\s+/g, '_').replace(/\//g, '-').toLowerCase();
@@ -265,7 +325,8 @@ function buildListFromExcel(filename) {
             precio: row.precio,
             precio_oferta: row.oferta || 0,
             info: fixCharacters(buildInfo(row)),
-            imagen: imagen
+            imagen: imagen,
+            rowNum: index + 2 // Fila real en Excel (index 0 es fila 2 con encabezado)
         };
     });
     return json;
