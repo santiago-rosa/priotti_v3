@@ -7,6 +7,7 @@ import { api } from '../../lib/axios';
 export const CartSync = () => {
     const { items, loadCart } = useCartStore();
     const { user, role } = useAuthStore();
+    const hasSyncedFromDB = useRef(false);
     const isFirstRun = useRef(true);
     const syncTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -20,8 +21,6 @@ export const CartSync = () => {
                 const dbItems = cartRes.data.items || [];
                 
                 if (dbItems.length > 0) {
-                    // Fetch full product details to re-hydrate if local cart is empty
-                    // or if we want to ensure we have the latest prices/names
                     const codigos = dbItems.map((i: any) => i.codigo);
                     const productsRes = await api.post('/products/list', { codigos });
                     const products = productsRes.data.data;
@@ -54,8 +53,14 @@ export const CartSync = () => {
             }
         };
 
-        if (user && role === 'client' && items.length === 0) {
+        if (!user) {
+            hasSyncedFromDB.current = false;
+            return;
+        }
+
+        if (role === 'client' && items.length === 0 && !hasSyncedFromDB.current) {
             syncFromDB();
+            hasSyncedFromDB.current = true;
         }
     }, [user, role, items.length, loadCart]); // Run when user logs in or cart is empty
 

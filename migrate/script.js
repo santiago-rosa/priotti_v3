@@ -9,7 +9,7 @@ const chalk = require('chalk');
 const API_URL = process.env.API_URL || 'http://localhost:8080/api';
 const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_CUID = process.env.ADMIN_CUID;
-const LISTAS_PATH = process.env.LISTAS_PATH || './../../';
+const LISTAS_PATH = process.env.LISTAS_PATH || './listas';
 
 async function main() {
     console.clear();
@@ -65,7 +65,7 @@ async function main() {
         // 2. Construir listas
         console.log(chalk.blue('Analizando datos... (esto puede tardar unos segundos)'));
         let newList = buildListFromExcel(path.join(LISTAS_PATH, newFileName));
-        let actualList = actualFileName ? buildListFromExcel(path.join(LISTAS_PATH, actualFileName)) : {};
+        let actualList = buildListFromExcel(path.join(LISTAS_PATH, actualFileName));
         
         // 3. Generar Diff
         let diffData = buildUpdateData(actualList, newList);
@@ -146,8 +146,6 @@ function showDetailedChanges(data, oldList, newList) {
     const priceChanges = data.update.filter(item => {
         const oldItem = oldList[item.codigo];
         const newItem = newList[item.codigo];
-        // Solo mostramos items que tengan un cambio que no sea solo 'info'
-        // pero para simplificar, mostramos si el precio cambió
         return oldItem && newItem && oldItem.precio !== newItem.precio;
     });
 
@@ -180,7 +178,6 @@ function showDetailedChanges(data, oldList, newList) {
 
     console.log(chalk.gray('\n----------------------------------------------\n'));
 }
-
 
 async function confirmUpdate(data) {
     console.log(chalk.bgRed.white.bold('\n ATENCIÓN '));
@@ -298,7 +295,7 @@ function buildListFromExcel(filename) {
     const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
     const json = {};
 
-    xlData.forEach(row => {
+    xlData.forEach((row, index) => {
         if (!row.arti) return;
         const codigo = (row.arti + '').trim();
         const imagen = codigo.replace(/\s+/g, '_').replace(/\//g, '-').toLowerCase();
@@ -311,7 +308,8 @@ function buildListFromExcel(filename) {
             precio: row.precio,
             precio_oferta: row.oferta || 0,
             info: fixCharacters(buildInfo(row)),
-            imagen: imagen
+            imagen: imagen,
+            rowNum: index + 2 // Fila real en Excel (index 0 es fila 2 con encabezado)
         };
     });
     return json;

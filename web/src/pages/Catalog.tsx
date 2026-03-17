@@ -292,7 +292,7 @@ export const Catalog = () => {
                                     
                                     <div className="flex-grow min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-[11px] font-black text-primary-500 bg-primary-500/10 px-1.5 py-0.5 rounded tracking-tighter uppercase whitespace-nowrap">
+                                            <span className="text-[15px] font-black text-primary-500 bg-primary-500/10 px-2 py-0.5 rounded tracking-tighter uppercase whitespace-nowrap">
                                                 {product.codigo}
                                             </span>
                                             <span className="text-[10px] font-bold text-gray-400 uppercase truncate">
@@ -369,7 +369,7 @@ export const Catalog = () => {
                                 <div className="p-5 flex-grow">
                                     {/* Tighter grouping for better identification */}
                                     <div className="flex items-center gap-3 mb-3 bg-black/30 p-2.5 rounded-lg border border-white/5">
-                                        <span className="text-xs font-black text-primary-500 bg-primary-500/10 px-2.5 py-1 rounded tracking-widest uppercase">
+                                        <span className="text-[15px] font-black text-primary-500 bg-primary-500/10 px-3 py-1.5 rounded tracking-widest uppercase">
                                             {product.codigo}
                                         </span>
                                         <span className="text-[11px] font-bold text-gray-300 uppercase tracking-tight truncate">
