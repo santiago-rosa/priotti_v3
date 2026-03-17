@@ -23,10 +23,10 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
 
         // Check Login (numero and cuit used as password)
         $stmt = $db->prepare("SELECT id, nombre, numero, cuit, role, porcentajeaumento FROM clientes WHERE numero = ? LIMIT 1");
-        $stmt->execute([$numero]);
+        $stmt->execute([trim($numero)]);
         $user = $stmt->fetch();
 
-        if (!$user || $user['cuit'] !== $cuit) {
+        if (!$user || strcasecmp(trim($user['cuit']), trim($cuit)) !== 0) {
             $response->getBody()->write(json_encode(['error' => 'Credenciales inválidas']));
             return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
         }
@@ -35,12 +35,14 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
         $updateStmt = $db->prepare("UPDATE clientes SET fechaUltimoLogin = NOW(), visitas = visitas + 1 WHERE id = ?");
         $updateStmt->execute([$user['id']]);
 
+        $userRole = strtolower(trim($user['role'] ?? 'client'));
+
         // Sign JWT
         $minutes = (int)($_ENV['JWT_EXPIRATION'] ?? 720);
         $payload = [
             'id' => (int)$user['id'],
             'numero' => $user['numero'],
-            'role' => $user['role'] ?? 'client',
+            'role' => $userRole,
             'iat' => time(),
             'exp' => time() + ($minutes * 60)
         ];
@@ -48,7 +50,7 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
 
         $response->getBody()->write(json_encode([
             'token' => $token,
-            'role' => $user['role'] ?? 'client',
+            'role' => $userRole,
             'user' => [
                 'id' => (int)$user['id'],
                 'nombre' => $user['nombre'],
