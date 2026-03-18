@@ -3,7 +3,7 @@ import { api } from '../lib/axios';
 import { formatPrice } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X, Calculator, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X, Calculator, ChevronDown, ChevronUp, ImagePlus, Upload, CheckCircle, Globe, Link2, ExternalLink } from 'lucide-react';
 
 interface Product {
     codigo: string;
@@ -30,6 +30,20 @@ export const Catalog = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [showMobileControls, setShowMobileControls] = useState(false);
+    const [defaultImageProducts, setDefaultImageProducts] = useState<Set<string>>(new Set());
+    const [uploadingProduct, setUploadingProduct] = useState<Product | null>(null);
+    const [uploadTab, setUploadTab] = useState<'web' | 'file'>('web');
+    // File tab state
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadSuccess, setUploadSuccess] = useState(false);
+    // URL tab state
+    const [urlInput, setUrlInput] = useState('');
+    const [urlPreview, setUrlPreview] = useState<string | null>(null);
+    const [urlPreviewError, setUrlPreviewError] = useState(false);
+    const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+    const [urlSaveSuccess, setUrlSaveSuccess] = useState(false);
 
     const [tempInfo, setTempInfo] = useState('');
     const [calcValue, setCalcValue] = useState<string>('0');
@@ -147,6 +161,90 @@ export const Catalog = () => {
             alert(error.response?.data?.error || 'Error al actualizar información');
         }
     };
+
+    const handleImageError = (codigo: string, e: React.SyntheticEvent<HTMLImageElement>) => {
+        const target = e.currentTarget;
+        if (!target.src.includes('default')) {
+            target.src = `${import.meta.env.VITE_API_URL}/products/image/default`;
+            setDefaultImageProducts(prev => new Set(prev).add(codigo));
+        }
+    };
+
+    const resetUploadModal = () => {
+        setUploadingProduct(null);
+        setUploadFile(null);
+        setUploadPreview(null);
+        setUploadSuccess(false);
+        setUrlInput('');
+        setUrlPreview(null);
+        setUrlPreviewError(false);
+        setUrlSaveSuccess(false);
+        setUploadTab('web');
+    };
+
+    const handleSelectUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadFile(file);
+        setUploadPreview(URL.createObjectURL(file));
+        setUploadSuccess(false);
+    };
+
+    const handleUploadImage = async () => {
+        if (!uploadingProduct || !uploadFile) return;
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('image', uploadFile);
+            await api.post(`/products/${uploadingProduct.codigo}/image`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setUploadSuccess(true);
+            setDefaultImageProducts(prev => { const next = new Set(prev); next.delete(uploadingProduct.codigo); return next; });
+            setTimeout(async () => {
+                const response = await api.get('/products');
+                setProducts(response.data.data);
+                resetUploadModal();
+            }, 1200);
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Error al subir la imagen');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handlePreviewUrl = () => {
+        const trimmed = urlInput.trim();
+        if (!trimmed) return;
+        setUrlPreviewError(false);
+        setUrlPreview(trimmed);
+        setUrlSaveSuccess(false);
+    };
+
+    const handleSaveFromUrl = async () => {
+        if (!uploadingProduct || !urlInput.trim()) return;
+        setIsFetchingUrl(true);
+        try {
+            await api.post(`/products/${uploadingProduct.codigo}/image-from-url`, { url: urlInput.trim() });
+            setUrlSaveSuccess(true);
+            setDefaultImageProducts(prev => { const next = new Set(prev); next.delete(uploadingProduct.codigo); return next; });
+            setTimeout(async () => {
+                const response = await api.get('/products');
+                setProducts(response.data.data);
+                resetUploadModal();
+            }, 1400);
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'No se pudo guardar la imagen desde esa URL');
+        } finally {
+            setIsFetchingUrl(false);
+        }
+    };
+
+    const buildSearchQuery = (product: Product) =>
+        encodeURIComponent(`${product.marca} ${product.codigo} ${product.rubro}`.trim());
+
+    const googleImagesUrl = (product: Product) =>
+        `https://www.google.com/search?tbm=isch&q=${buildSearchQuery(product)}`;
 
     const handleDownloadExcel = async () => {
         try {
@@ -353,19 +451,23 @@ export const Catalog = () => {
                             if (viewMode === 'compact') {
                                 return (
                                     <div key={product.codigo} className="bg-surface rounded-xl border border-white/5 hover:border-primary-500/50 transition-all p-3 flex items-center gap-4 group">
-                                        <div className="w-16 h-16 bg-surface-darker rounded-lg overflow-hidden flex-shrink-0">
+                                        <div className="w-16 h-16 bg-surface-darker rounded-lg overflow-hidden flex-shrink-0 relative group/img">
                                         <img
                                             src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
                                             alt={product.codigo}
                                             className="w-full h-full object-cover cursor-zoom-in hover:opacity-80 transition-opacity"
-                                            onClick={() => setSelectedImage(`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`)}
-                                            onError={(e) => {
-                                                const target = e.currentTarget;
-                                                if (!target.src.includes('default.png')) {
-                                                    target.src = `${import.meta.env.VITE_API_URL}/products/image/default`;
-                                                }
-                                            }}
+                                            onClick={() => !defaultImageProducts.has(product.codigo) && setSelectedImage(`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`)}
+                                            onError={(e) => handleImageError(product.codigo, e)}
                                         />
+                                        {role === 'admin' && defaultImageProducts.has(product.codigo) && (
+                                            <button
+                                                onClick={() => { setUploadingProduct(product); setUploadFile(null); setUploadPreview(null); setUploadSuccess(false); }}
+                                                className="absolute inset-0 flex items-center justify-center bg-black/60 hover:bg-primary-500/80 transition-all rounded-lg"
+                                                title="Cargar imagen"
+                                            >
+                                                <ImagePlus className="w-5 h-5 text-white" />
+                                            </button>
+                                        )}
                                     </div>
                                     
                                     <div className="flex-grow min-w-0">
@@ -442,14 +544,19 @@ export const Catalog = () => {
                                         src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
                                         alt={product.aplicacion || product.codigo}
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 z-10 cursor-zoom-in"
-                                        onClick={() => setSelectedImage(`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`)}
-                                        onError={(e) => {
-                                            const target = e.currentTarget;
-                                            if (!target.src.includes('default.png')) {
-                                                target.src = `${import.meta.env.VITE_API_URL}/products/image/default`;
-                                            }
-                                        }}
+                                        onClick={() => !defaultImageProducts.has(product.codigo) && setSelectedImage(`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`)}
+                                        onError={(e) => handleImageError(product.codigo, e)}
                                     />
+                                    {role === 'admin' && defaultImageProducts.has(product.codigo) && (
+                                        <button
+                                            onClick={() => { setUploadingProduct(product); setUploadFile(null); setUploadPreview(null); setUploadSuccess(false); }}
+                                            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black/50 hover:bg-primary-500/70 transition-all duration-300 backdrop-blur-sm"
+                                            title="Cargar imagen del producto"
+                                        >
+                                            <ImagePlus className="w-8 h-8 text-white drop-shadow-lg" />
+                                            <span className="text-[10px] font-black text-white uppercase tracking-widest drop-shadow">Cargar Imagen</span>
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="p-5 flex-grow">
@@ -661,6 +768,227 @@ export const Catalog = () => {
                     </div>
                 </div>
             )}
+            {/* ── Modal: Cargar Imagen (Admin) ─────────────────────────────── */}
+            {uploadingProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={resetUploadModal} />
+
+                    <div className="relative bg-surface border border-white/10 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+
+                        {/* ── Header ───────────────────────────────────────────── */}
+                        <div className="bg-gradient-to-r from-primary-500/20 via-primary-500/5 to-transparent p-6 border-b border-white/5">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="text-[10px] font-black tracking-widest text-primary-500 uppercase mb-1 flex items-center gap-2">
+                                        <span className="bg-primary-500/10 border border-primary-500/20 px-2 py-0.5 rounded">{uploadingProduct.marca}</span>
+                                        <span className="text-gray-600">•</span>
+                                        <span className="text-gray-500">{uploadingProduct.rubro}</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                                        <ImagePlus className="w-5 h-5 text-primary-500" />
+                                        Cargar Imagen del Producto
+                                    </h3>
+                                    <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest mt-1 font-mono">
+                                        {uploadingProduct.codigo}
+                                        {uploadingProduct.aplicacion && (
+                                            <span className="text-gray-700 ml-2 normal-case">— {uploadingProduct.aplicacion.replace(/=/g, 'IDEM ').slice(0, 50)}</span>
+                                        )}
+                                    </p>
+                                </div>
+                                <button onClick={resetUploadModal} className="p-2 hover:bg-white/5 rounded-xl text-gray-500 hover:text-white transition-colors shrink-0">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            {/* ── Tabs ─────────────────────────────────────────── */}
+                            <div className="flex gap-1 mt-5 bg-black/30 p-1 rounded-xl border border-white/5">
+                                <button
+                                    onClick={() => setUploadTab('web')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        uploadTab === 'web'
+                                            ? 'bg-primary-500 text-black shadow-lg'
+                                            : 'text-gray-500 hover:text-white'
+                                    }`}
+                                >
+                                    <Globe className="w-3.5 h-3.5" />
+                                    Buscar en Internet
+                                </button>
+                                <button
+                                    onClick={() => setUploadTab('file')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        uploadTab === 'file'
+                                            ? 'bg-primary-500 text-black shadow-lg'
+                                            : 'text-gray-500 hover:text-white'
+                                    }`}
+                                >
+                                    <Upload className="w-3.5 h-3.5" />
+                                    Subir Archivo
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* ── Tab: Buscar en Internet ─────────────────────────── */}
+                        {uploadTab === 'web' && (
+                            <div className="p-6 space-y-5">
+
+                                {/* Google Images button */}
+                                <div>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-3">Buscar con — abrirá una nueva pestaña</p>
+                                    <a
+                                        href={googleImagesUrl(uploadingProduct)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center gap-3 w-full py-3 px-4 bg-white/5 hover:bg-primary-500/10 border border-white/5 hover:border-primary-500/30 rounded-xl transition-all group/link"
+                                    >
+                                        <span className="text-lg">🔍</span>
+                                        <span className="text-[10px] font-black text-gray-400 group-hover/link:text-primary-500 uppercase tracking-widest">Google Imágenes</span>
+                                        <ExternalLink className="w-3 h-3 text-gray-700 group-hover/link:text-primary-500 transition-colors ml-auto" />
+                                    </a>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="flex items-center gap-3">
+                                    <div className="flex-1 h-px bg-white/5" />
+                                    <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Luego pegá la URL de la imagen aquí</span>
+                                    <div className="flex-1 h-px bg-white/5" />
+                                </div>
+
+                                {/* URL Input + Preview button */}
+                                <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                                        <input
+                                            type="url"
+                                            value={urlInput}
+                                            onChange={(e) => { setUrlInput(e.target.value); setUrlPreview(null); setUrlPreviewError(false); setUrlSaveSuccess(false); }}
+                                            onKeyDown={(e) => e.key === 'Enter' && handlePreviewUrl()}
+                                            placeholder="https://ejemplo.com/imagen.jpg"
+                                            className="w-full pl-9 pr-4 py-2.5 bg-surface-darker border border-white/10 rounded-xl text-xs text-gray-200 placeholder-gray-700 focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handlePreviewUrl}
+                                        disabled={!urlInput.trim()}
+                                        className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-gray-300 uppercase tracking-widest transition-all disabled:opacity-40 shrink-0"
+                                    >
+                                        Preview
+                                    </button>
+                                </div>
+
+                                {/* URL Image Preview */}
+                                <div className="w-full h-44 bg-surface-darker rounded-2xl border border-white/5 flex items-center justify-center overflow-hidden relative">
+                                    {urlSaveSuccess ? (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <CheckCircle className="w-12 h-12 text-green-400" />
+                                            <span className="text-green-400 font-black text-sm uppercase tracking-widest">¡Imagen guardada!</span>
+                                        </div>
+                                    ) : urlPreview ? (
+                                        <>
+                                            <img
+                                                src={urlPreview}
+                                                alt="URL preview"
+                                                className="w-full h-full object-contain"
+                                                onError={() => { setUrlPreviewError(true); setUrlPreview(null); }}
+                                            />
+                                            {urlPreviewError && (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-red-400">
+                                                    <X className="w-8 h-8" />
+                                                    <p className="text-[10px] font-black uppercase tracking-widest">No se pudo cargar la imagen</p>
+                                                    <p className="text-[9px] text-gray-600">Verificá que la URL sea directa a una imagen</p>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2 text-gray-700">
+                                            <Globe className="w-10 h-10" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest">La imagen aparecerá aquí</p>
+                                            <p className="text-[9px] text-gray-600 max-w-52 text-center leading-relaxed">
+                                                Abrí Google Imágenes ↑, encontrá una foto, hacé clic derecho → "Copiar dirección de imagen" y pegala arriba.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Footer */}
+                                <div className="flex justify-end gap-3 pt-1">
+                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-gray-500 font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleSaveFromUrl}
+                                        disabled={!urlInput.trim() || isFetchingUrl || urlSaveSuccess || urlPreviewError}
+                                        className="px-8 py-2.5 bg-primary-500 text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                                    >
+                                        {isFetchingUrl ? (
+                                            <><div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />Descargando...</>
+                                        ) : (
+                                            <><Upload className="w-3.5 h-3.5" />Guardar desde URL</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Tab: Subir Archivo ──────────────────────────────── */}
+                        {uploadTab === 'file' && (
+                            <div className="p-6 space-y-5">
+                                {/* Preview */}
+                                <div className="w-full h-52 bg-surface-darker rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden relative">
+                                    {uploadPreview ? (
+                                        <img src={uploadPreview} alt="Preview" className="w-full h-full object-contain" />
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-3 text-gray-700">
+                                            <Upload className="w-10 h-10" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest">Seleccioná un archivo</span>
+                                        </div>
+                                    )}
+                                    {uploadSuccess && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm gap-2">
+                                            <CheckCircle className="w-12 h-12 text-green-400" />
+                                            <span className="text-green-400 font-black text-sm uppercase tracking-widest">¡Imagen guardada!</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* File picker */}
+                                <label className="flex items-center justify-center gap-3 w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl cursor-pointer transition-all group/label">
+                                    <Upload className="w-4 h-4 text-primary-500 group-hover/label:scale-110 transition-transform" />
+                                    <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">
+                                        {uploadFile ? uploadFile.name : 'Elegir imagen del equipo...'}
+                                    </span>
+                                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleSelectUploadFile} />
+                                </label>
+
+                                {uploadFile && (
+                                    <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest text-center">
+                                        Se guardará como: <span className="text-primary-500">{uploadingProduct.imagen || uploadingProduct.codigo}.{uploadFile.name.split('.').pop()}</span>
+                                    </p>
+                                )}
+
+                                {/* Footer */}
+                                <div className="flex justify-end gap-3">
+                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-gray-500 font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleUploadImage}
+                                        disabled={!uploadFile || isUploading || uploadSuccess}
+                                        className="px-8 py-2.5 bg-primary-500 text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                                    >
+                                        {isUploading ? (
+                                            <><div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />Subiendo...</>
+                                        ) : (
+                                            <><Upload className="w-3.5 h-3.5" />Guardar Imagen</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {selectedImage && (
                 <div 
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"

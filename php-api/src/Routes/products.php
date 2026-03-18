@@ -7,6 +7,29 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 /** @var \Slim\App $app */
 
+/**
+ * Resolve the absolute path to the product images directory.
+ *
+ * PRODUCTS_IMAGES_PATH in .env can be:
+ *  - An absolute path : /home/felipepr/public_html/Resources/fotos
+ *    → used as-is, regardless of where the API lives (test or prod)
+ *  - A relative path  : Resources/fotos
+ *    → resolved relative to the project root (three levels above /src/Routes)
+ */
+function resolveImagesPath(): string
+{
+    $configured = trim($_ENV['PRODUCTS_IMAGES_PATH'] ?? 'Resources/fotos');
+
+    // Absolute path → use directly
+    if (str_starts_with($configured, '/')) {
+        return $configured;
+    }
+
+    // Relative path → resolve from project root  (php-api/)
+    $projectRoot = realpath(__DIR__ . '/../../../') ?: dirname(__DIR__, 3);
+    return rtrim($projectRoot, '/') . '/' . ltrim($configured, '/');
+}
+
 $app->get('/api/products', function (Request $request, Response $response) {
     $queryParams = $request->getQueryParams();
     $filter = $queryParams['filter'] ?? '';
@@ -218,20 +241,234 @@ $app->post('/api/products/list', function (Request $request, Response $response)
     }
 })->add(new AuthMiddleware());
 
+// Upload image for a product (admin only)
+$app->post('/api/products/{codigo}/image', function (Request $request, Response $response, $args) {
+    $codigo = $args['codigo'];
+    $uploadedFiles = $request->getUploadedFiles();
+
+    if (empty($uploadedFiles['image'])) {
+        $response->getBody()->write(json_encode(['error' => 'No se recibió ningún archivo']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    $uploadedFile = $uploadedFiles['image'];
+
+    if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+        $response->getBody()->write(json_encode(['error' => 'Error al subir el archivo']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    // Validate MIME type
+    $stream = $uploadedFile->getStream();
+    $stream->rewind();
+    $tmpContent = $stream->read(12); // read magic bytes
+    $stream->rewind();
+
+    $allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    $clientMime = $uploadedFile->getClientMediaType();
+    if (!in_array($clientMime, $allowedMimes)) {
+        $response->getBody()->write(json_encode(['error' => 'Solo se permiten imágenes (JPG, PNG, WEBP, GIF)']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+
+        // Get product to resolve the imagen field
+        $stmt = $db->prepare("SELECT imagen FROM productos WHERE codigo = ?");
+        $stmt->execute([$codigo]);
+        $product = $stmt->fetch();
+
+        if (!$product) {
+            $response->getBody()->write(json_encode(['error' => 'Producto no encontrado']));
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        // Determine the base filename: use imagen field if set, otherwise codigo
+        $baseFilename = !empty($product['imagen']) ? $product['imagen'] : $codigo;
+        // Sanitize slashes to dashes
+        $baseFilename = str_replace(['/', ' '], ['-', '_'], $baseFilename);
+
+        $basePath = resolveImagesPath();
+
+        // Ensure directory exists
+        if (!is_dir($basePath)) {
+            mkdir($basePath, 0775, true);
+        }
+
+        // Determine extension from uploaded file
+        $extMap = [
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+        ];
+        $ext = $extMap[$clientMime] ?? 'jpg';
+
+        // Remove any existing files with the same base name (any extension)
+        $existing = glob(rtrim($basePath, '/') . '/' . $baseFilename . '.*');
+        if ($existing) {
+            foreach ($existing as $old) {
+                @unlink($old);
+            }
+        }
+
+        $newFilename = $baseFilename . '.' . $ext;
+        $destPath = rtrim($basePath, '/') . '/' . $newFilename;
+
+        $uploadedFile->moveTo($destPath);
+
+        $response->getBody()->write(json_encode([
+            'message'  => 'Imagen subida correctamente',
+            'filename' => $newFilename
+        ]));
+        return $response->withHeader('Content-Type', 'application/json');
+
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => 'Error: ' . $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+// Fetch and save product image from a remote URL (admin only)
+$app->post('/api/products/{codigo}/image-from-url', function (Request $request, Response $response, $args) {
+    $codigo = $args['codigo'];
+    $data    = $request->getParsedBody();
+    $url     = trim($data['url'] ?? '');
+
+    if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+        $response->getBody()->write(json_encode(['error' => 'URL inválida o no proporcionada']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    // Only allow http(s)
+    $scheme = strtolower(parse_url($url, PHP_URL_SCHEME) ?? '');
+    if (!in_array($scheme, ['http', 'https'])) {
+        $response->getBody()->write(json_encode(['error' => 'Solo se permiten URLs http/https']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        // ── Download the Image ────────────────────────────────────────────────
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_SSL_VERIFYPEER => false,   // tolerate self-signed certs
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+            CURLOPT_HTTPHEADER     => ['Accept: image/*,*/*;q=0.8'],
+            CURLOPT_MAXFILESIZE    => 5 * 1024 * 1024, // 5 MB cap
+        ]);
+
+        $imageData   = curl_exec($ch);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        $httpCode    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError   = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError || $imageData === false) {
+            $response->getBody()->write(json_encode(['error' => 'No se pudo descargar la imagen: ' . $curlError]));
+            return $response->withStatus(502)->withHeader('Content-Type', 'application/json');
+        }
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            $response->getBody()->write(json_encode(['error' => "El servidor remoto respondió con código $httpCode"]));
+            return $response->withStatus(502)->withHeader('Content-Type', 'application/json');
+        }
+
+        if (empty($imageData)) {
+            $response->getBody()->write(json_encode(['error' => 'La URL devolvió contenido vacío']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        // ── Validate MIME via content-type header AND magic bytes ─────────────
+        $mimeMap = [
+            'image/jpeg' => 'jpg',
+            'image/jpg'  => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+        ];
+
+        // Strip charset suffix like "image/jpeg; charset=…"
+        $baseMime = strtolower(explode(';', $contentType ?? '')[0]);
+
+        // Detect from magic bytes as a second check
+        $magicMime = null;
+        if (strlen($imageData) >= 4) {
+            $header = substr($imageData, 0, 12);
+            if (substr($header, 0, 3) === "\xFF\xD8\xFF")         $magicMime = 'image/jpeg';
+            elseif (substr($header, 0, 8) === "\x89PNG\r\n\x1A\n") $magicMime = 'image/png';
+            elseif (substr($header, 0, 4) === 'RIFF' &&
+                    substr($header, 8, 4) === 'WEBP')               $magicMime = 'image/webp';
+            elseif (substr($header, 0, 6) === 'GIF87a' ||
+                    substr($header, 0, 6) === 'GIF89a')             $magicMime = 'image/gif';
+        }
+
+        $resolvedMime = isset($mimeMap[$baseMime]) ? $baseMime : ($magicMime ?? null);
+        if (!$resolvedMime || !isset($mimeMap[$resolvedMime])) {
+            $response->getBody()->write(json_encode(['error' => 'El contenido descargado no es una imagen válida (JPG, PNG, WEBP, GIF)']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        $ext = $mimeMap[$resolvedMime];
+
+        // ── Resolve save path ────────────────────────────────────────────────
+        $db   = Database::getConnection();
+        $stmt = $db->prepare("SELECT imagen FROM productos WHERE codigo = ?");
+        $stmt->execute([$codigo]);
+        $product = $stmt->fetch();
+
+        if (!$product) {
+            $response->getBody()->write(json_encode(['error' => 'Producto no encontrado']));
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $baseFilename = !empty($product['imagen']) ? $product['imagen'] : $codigo;
+        $baseFilename = str_replace(['/', ' '], ['-', '_'], $baseFilename);
+
+        $basePath = resolveImagesPath();
+
+        if (!is_dir($basePath)) {
+            mkdir($basePath, 0775, true);
+        }
+
+        // Remove existing files with same base name
+        $existing = glob(rtrim($basePath, '/') . '/' . $baseFilename . '.*');
+        if ($existing) {
+            foreach ($existing as $old) { @unlink($old); }
+        }
+
+        $newFilename = $baseFilename . '.' . $ext;
+        $destPath    = rtrim($basePath, '/') . '/' . $newFilename;
+
+        if (file_put_contents($destPath, $imageData) === false) {
+            $response->getBody()->write(json_encode(['error' => 'No se pudo guardar la imagen en el servidor']));
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+
+        $response->getBody()->write(json_encode([
+            'message'  => 'Imagen guardada correctamente desde URL',
+            'filename' => $newFilename,
+        ]));
+        return $response->withHeader('Content-Type', 'application/json');
+
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => 'Error: ' . $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
 // Use {codigo:.+} to allow slashes inside the product code (like FI19999/1)
 $app->get('/api/products/image/{codigo:.+}', function (Request $request, Response $response, $args) {
     // 1. Clean the code (remove spaces)
     $codigo = trim($args['codigo']);
-    $envPath = $_ENV['PRODUCTS_IMAGES_PATH'] ?? 'Resources/fotos';
 
-
-    // 2. Resolve Site Root
-    $siteRoot = realpath(__DIR__ . '/../../../');
-    if (!$siteRoot) {
-        $siteRoot = dirname(__DIR__, 3);
-    }
-
-    $basePath = rtrim($siteRoot, '/') . '/' . ltrim($envPath, '/');
+    // 2. Resolve images directory
+    $siteRoot = realpath(__DIR__ . '/../../../') ?: dirname(__DIR__, 3);
+    $basePath = resolveImagesPath();
     $filePath = null;
 
     // 3. Apply transformation rules and search variants
@@ -267,24 +504,28 @@ $app->get('/api/products/image/{codigo:.+}', function (Request $request, Respons
     }
 
 
-    // 4. Fallback to default
+    // 4. If no product image found:
+    //    - If the request is for the special "default" key, serve default.png
+    //    - Otherwise return 404 so the frontend onError handler fires
     if (!$filePath) {
-        $fallbacks = [
-            $siteRoot . '/images/products/default.png',
-            $siteRoot . '/public/images/products/default.png',
-            rtrim($basePath, '/') . '/default.png'
-        ];
-
-        foreach ($fallbacks as $fb) {
-            if (file_exists($fb)) {
-                $filePath = $fb;
-                break;
+        if ($codigo === 'default') {
+            $defaultCandidates = [
+                $siteRoot . '/images/products/default.png',
+                $siteRoot . '/public/images/products/default.png',
+                rtrim($basePath, '/') . '/default.png',
+            ];
+            foreach ($defaultCandidates as $candidate) {
+                if (file_exists($candidate)) {
+                    $filePath = $candidate;
+                    break;
+                }
             }
         }
-    }
 
-    if (!$filePath || !file_exists($filePath)) {
-        return $response->withStatus(404);
+        // Still nothing (or not a "default" request) → 404
+        if (!$filePath) {
+            return $response->withStatus(404);
+        }
     }
 
     // 5. Serve the file
