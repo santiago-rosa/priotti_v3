@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../../lib/axios';
-import { UserPlus, Edit2, Shield, User } from 'lucide-react';
+import { UserPlus, Edit2, Shield, User, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const AdminClients = () => {
     const [clients, setClients] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
+    const [meta, setMeta] = useState<any>({ total: 0, page: 1, last_page: 1 });
 
     // Modal State
     const [showModal, setShowModal] = useState(false);
@@ -13,14 +16,28 @@ export const AdminClients = () => {
     const [formData, setFormData] = useState({ nombre: '', numero: '', cuit: '', email: '', aumento: '0', estado: 'ACTIVO' });
 
     useEffect(() => {
-        fetchClients();
-    }, []);
+        setPage(1);
+    }, [searchTerm]);
 
-    const fetchClients = async () => {
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchClients(page, searchTerm);
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [page, searchTerm]);
+
+    const fetchClients = async (p = page, search = searchTerm) => {
         setLoading(true);
         try {
-            const res = await api.get('/clients');
+            const res = await api.get('/clients', {
+                params: {
+                    page: p,
+                    search: search,
+                    limit: 20
+                }
+            });
             setClients(res.data.data);
+            setMeta(res.data.meta);
         } catch (error) {
             console.error(error);
         } finally {
@@ -78,10 +95,28 @@ export const AdminClients = () => {
                 </button>
             </div>
 
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="relative flex-1 group w-full">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary-500 transition-colors" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre, número o email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-surface border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-600"
+                    />
+                </div>
+                {meta.total > 0 && (
+                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-surface border border-white/5 px-4 py-4 rounded-2xl h-full flex items-center">
+                        Encontrados: <span className="text-primary-500 ml-2">{meta.total}</span>
+                    </div>
+                )}
+            </div>
+
             <div className="bg-surface rounded-2xl shadow-2xl border border-white/5 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-white/5">
-                        <thead className="bg-[#1A1A1A]">
+                        <thead className="bg-surface-darker">
                             <tr>
                                 <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Cliente</th>
                                 <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Credenciales</th>
@@ -97,7 +132,7 @@ export const AdminClients = () => {
                                 <tr key={client.id} className="hover:bg-white/5 transition-colors group">
                                     <td className="px-6 py-5">
                                         <div className="flex items-center">
-                                            <div className="flex-shrink-0 h-12 w-12 bg-[#2a2a2a] rounded-xl flex items-center justify-center border border-white/5 group-hover:border-primary-500/30 transition-all">
+                                            <div className="flex-shrink-0 h-12 w-12 bg-surface-light rounded-xl flex items-center justify-center border border-white/5 group-hover:border-primary-500/30 transition-all">
                                                 <User className="h-6 w-6 text-primary-500" />
                                             </div>
                                             <div className="ml-4">
@@ -132,6 +167,29 @@ export const AdminClients = () => {
                 </div>
             </div>
 
+            {/* Pagination */}
+            {!loading && meta.last_page > 1 && (
+                <div className="flex justify-center items-center space-x-4 pb-8">
+                    <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="p-3 rounded-xl bg-surface border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-surface border border-white/5 px-4 py-2 rounded-lg">
+                        Página <span className="text-primary-500">{page}</span> de <span className="text-white">{meta.last_page}</span>
+                    </div>
+                    <button
+                        onClick={() => setPage(p => Math.min(meta.last_page, p + 1))}
+                        disabled={page === meta.last_page}
+                        className="p-3 rounded-xl bg-surface border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
+
             {/* Modal */}
             {showModal && (
                 <div className="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -149,18 +207,18 @@ export const AdminClients = () => {
  
                                     <div className="space-y-6">
                                         <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Razón Social</label>
-                                            <input required type="text" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700" placeholder="Nombre completo" /></div>
+                                            <input required type="text" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} className="w-full bg-surface-darker border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700" placeholder="Nombre completo" /></div>
  
                                         <div className="grid grid-cols-2 gap-6">
                                             <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Usuario (Nº)</label>
-                                                <input required type="text" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all tabular-nums" /></div>
- 
+                                                <input required type="text" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} className="w-full bg-surface-darker border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all tabular-nums" /></div>
+
                                             <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Contraseña (CUIT)</label>
-                                                <input required type="text" value={formData.cuit} onChange={e => setFormData({ ...formData, cuit: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
+                                                <input required type="text" value={formData.cuit} onChange={e => setFormData({ ...formData, cuit: e.target.value })} className="w-full bg-surface-darker border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
                                         </div>
  
                                         <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Email Corporativo</label>
-                                            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
+                                            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-surface-darker border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
  
                                         <div className="grid grid-cols-2 gap-6">
                                             <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Aumento (%)</label>

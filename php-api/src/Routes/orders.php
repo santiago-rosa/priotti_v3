@@ -148,7 +148,7 @@ $app->post('/api/orders/checkout', function (Request $request, Response $respons
         $clientName = $clientData ? $clientData['nombre'] : 'Desconocido';
 
         $emailService = new \App\Services\EmailService();
-        $sent = $emailService->sendOrderNotification((string) $clientId, $clientName, $pendingOrder['items']);
+        $sent = $emailService->sendOrderNotification((string) $user->numero, $clientName, $pendingOrder['items']);
 
         if (!$sent) {
             $response->getBody()->write(json_encode(['error' => 'No se pudo enviar el correo de confirmación. Por favor, contacte a soporte.']));
