@@ -20,8 +20,9 @@ export default {
                     900: '#996e00',
                 },
                 surface: {
-                    DEFAULT: '#1E1E1E',
-                    light: '#2D2D2D',
+                    DEFAULT: '#19191E',
+                    light: '#232328',
+                    darker: '#111116',
                 }
             }
         },

@@ -116,7 +116,7 @@ export const AdminClients = () => {
             <div className="bg-surface rounded-2xl shadow-2xl border border-white/5 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-white/5">
-                        <thead className="bg-[#1A1A1A]">
+                        <thead className="bg-surface-darker">
                             <tr>
                                 <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Cliente</th>
                                 <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Credenciales</th>
@@ -132,7 +132,7 @@ export const AdminClients = () => {
                                 <tr key={client.id} className="hover:bg-white/5 transition-colors group">
                                     <td className="px-6 py-5">
                                         <div className="flex items-center">
-                                            <div className="flex-shrink-0 h-12 w-12 bg-[#2a2a2a] rounded-xl flex items-center justify-center border border-white/5 group-hover:border-primary-500/30 transition-all">
+                                            <div className="flex-shrink-0 h-12 w-12 bg-surface-light rounded-xl flex items-center justify-center border border-white/5 group-hover:border-primary-500/30 transition-all">
                                                 <User className="h-6 w-6 text-primary-500" />
                                             </div>
                                             <div className="ml-4">
@@ -207,18 +207,18 @@ export const AdminClients = () => {
  
                                     <div className="space-y-6">
                                         <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Razón Social</label>
-                                            <input required type="text" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700" placeholder="Nombre completo" /></div>
+                                            <input required type="text" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} className="w-full bg-surface-darker border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700" placeholder="Nombre completo" /></div>
  
                                         <div className="grid grid-cols-2 gap-6">
                                             <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Usuario (Nº)</label>
-                                                <input required type="text" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all tabular-nums" /></div>
- 
+                                                <input required type="text" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} className="w-full bg-surface-darker border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all tabular-nums" /></div>
+
                                             <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Contraseña (CUIT)</label>
-                                                <input required type="text" value={formData.cuit} onChange={e => setFormData({ ...formData, cuit: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
+                                                <input required type="text" value={formData.cuit} onChange={e => setFormData({ ...formData, cuit: e.target.value })} className="w-full bg-surface-darker border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
                                         </div>
  
                                         <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Email Corporativo</label>
-                                            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-[#121212] border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
+                                            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-surface-darker border border-white/5 rounded-2xl py-4 px-5 text-white focus:ring-2 focus:ring-primary-500/50 outline-none transition-all" /></div>
  
                                         <div className="grid grid-cols-2 gap-6">
                                             <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Aumento (%)</label>

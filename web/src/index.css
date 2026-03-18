@@ -4,10 +4,10 @@
 
 @layer base {
   body {
-    @apply bg-[#0F0F0F] text-gray-100 font-sans antialiased;
-    background-image: 
-      radial-gradient(circle at 50% 0%, rgba(255, 184, 0, 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 0% 100%, rgba(255, 184, 0, 0.02) 0%, transparent 40%);
+    @apply bg-[#111116] text-gray-100 font-sans antialiased;
+    background-image:
+      radial-gradient(circle at 50% -10%, rgba(255, 184, 0, 0.08) 0%, transparent 60%),
+      radial-gradient(circle at 0% 100%, rgba(255, 184, 0, 0.04) 0%, transparent 40%);
     background-attachment: fixed;
   }
 }
@@ -18,13 +18,13 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f0f0f;
+  background: #111116;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2D2D2D;
+  background: #19191E;
   border-radius: 10px;
-  border: 2px solid #0f0f0f;
+  border: 2px solid #111116;
 }
 
 ::-webkit-scrollbar-thumb:hover {

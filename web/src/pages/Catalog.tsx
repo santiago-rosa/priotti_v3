@@ -3,7 +3,7 @@ import { api } from '../lib/axios';
 import { formatPrice } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X, Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Product {
     codigo: string;
@@ -29,8 +29,10 @@ export const Catalog = () => {
     const [editingProductInfo, setEditingProductInfo] = useState<Product | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [showMobileControls, setShowMobileControls] = useState(false);
 
     const [tempInfo, setTempInfo] = useState('');
+    const [calcValue, setCalcValue] = useState<string>('0');
 
     const { role, user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
@@ -176,80 +178,154 @@ export const Catalog = () => {
 
     return (
         <div className="space-y-6 text-gray-200">
-            {/* Header and Controls */}
-            <div className="bg-[#1A1A1A]/80 p-6 rounded-2xl shadow-2xl border border-white/5 flex flex-col md:flex-row gap-6 justify-between items-center backdrop-blur-xl sticky top-[80px] z-30">
-                <div className="relative w-full md:w-1/2 group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-500 group-focus-within:text-primary-500 transition-colors" />
+            {/* Header and Controls Container */}
+            <div className="bg-surface/80 rounded-2xl shadow-2xl border border-white/5 backdrop-blur-xl sticky top-[80px] z-30 overflow-hidden transition-all duration-300">
+                {/* Always Visible Row: Search and Toggle */}
+                <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6 md:items-center">
+                    <div className="flex items-center gap-4 flex-1">
+                        {/* Search Bar */}
+                        <div className="relative flex-1 group">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 text-gray-500 group-focus-within:text-primary-500 transition-colors" />
+                            </div>
+                            <input
+                                type="text"
+                                className="block w-full pl-10 pr-4 py-3 bg-surface-darker border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm transition-all text-white placeholder-gray-600 outline-none shadow-inner"
+                                placeholder="¿Qué estás buscando? (código, marca, rubro...)"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Expand Button (Mobile Only) */}
+                        <button 
+                            onClick={() => setShowMobileControls(!showMobileControls)}
+                            className="md:hidden bg-primary-500 text-black p-3 rounded-xl shadow-lg active:scale-95 transition-transform shrink-0"
+                            title={showMobileControls ? "Ocultar filtros" : "Más filtros"}
+                        >
+                            {showMobileControls ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
                     </div>
-                    <input
-                        type="text"
-                        className="block w-full pl-12 pr-4 py-3.5 bg-[#0F0F0F] border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm transition-all text-white placeholder-gray-600 outline-none shadow-inner"
-                        placeholder="¿Qué estás buscando? (código, marca, rubro...)"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
 
-                {user && (
-                    <div className="flex space-x-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 items-center">
-                        {role === 'admin' && (
-                            <button
-                                onClick={handleBulkUpdateThresholds}
-                                className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20 mr-2"
-                            >
-                                <Settings className="w-4 h-4 mr-2" />
-                                Bloque
-                            </button>
-                        )}
-                        <button
-                            onClick={() => setFilter('all')}
-                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-[0_5px_15px_rgba(255,184,0,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
-                        >
-                            <Filter className="w-4 h-4 mr-2" />
-                            Todos
-                        </button>
-                        <button
-                            onClick={() => setFilter('offers')}
-                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-[0_5px_15px_rgba(239,68,68,0.3)]' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20'}`}
-                        >
-                            <Tag className="w-4 h-4 mr-2" />
-                            Ofertas
-                        </button>
-                        <button
-                            onClick={() => setFilter('news')}
-                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-[0_5px_15px_rgba(34,197,94,0.3)]' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20 border border-green-500/20'}`}
-                        >
-                            <Clock className="w-4 h-4 mr-2" />
-                            Novedades
-                        </button>
-                        
-                        <button
-                            onClick={handleDownloadExcel}
-                            className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20"
-                        >
-                            <Download className="w-4 h-4 mr-2" />
-                            Lista Excel
-                        </button>
-
-                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 ml-auto">
+                    {/* View Mode Toggle (Visible on desktop always) */}
+                    <div className="hidden md:flex items-center gap-4">
+                        <div className="flex bg-surface-darker p-1 rounded-xl border border-white/10 shrink-0">
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
                                 title="Vista Cuadrícula"
                             >
-                                <LayoutGrid className="w-4 h-4" />
+                                <LayoutGrid className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setViewMode('compact')}
                                 className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
                                 title="Vista Compacta"
                             >
-                                <List className="w-4 h-4" />
+                                <List className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
-                )}
+                </div>
+
+                {/* Collapsible Section: Mode (on mobile), Calculator, Filters */}
+                <div className={`${showMobileControls ? 'block' : 'hidden'} md:block transition-all animate-in fade-in slide-in-from-top-1 duration-300`}>
+                    <div className="px-4 pb-6 md:px-6 md:pb-6 border-t md:border-t-0 border-white/5 space-y-4 md:space-y-0 md:flex md:flex-row md:items-center md:gap-4">
+                        
+                        {/* View Mode (Mobile-only within collapse) */}
+                        <div className="md:hidden flex justify-between items-center py-2 border-b border-white/5">
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Modo de vista:</span>
+                            <div className="flex bg-surface-darker p-1 rounded-xl border border-white/10 shrink-0">
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black' : 'text-gray-500'}`}
+                                >
+                                    <LayoutGrid className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('compact')}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black' : 'text-gray-500'}`}
+                                >
+                                    <List className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Price Calculator */}
+                        <div className="relative group/calc w-full md:w-auto">
+                            <div className="flex items-center bg-surface-darker border border-white/10 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary-500/50 transition-all shadow-inner uppercase tracking-widest text-[10px] font-black">
+                                <Calculator className="w-4 h-4 text-primary-500 mr-3 shrink-0" />
+                                <span className="text-gray-500 mr-2 shrink-0">%:</span>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={calcValue}
+                                    onChange={(e) => setCalcValue(e.target.value)}
+                                    className="flex-1 md:w-14 bg-transparent border-none text-sm font-black text-white focus:ring-0 outline-none text-right placeholder-gray-700"
+                                    placeholder="0.0"
+                                />
+                            </div>
+                            {/* Tooltip explicativo */}
+                            <div className="absolute top-full mt-2 left-0 w-64 bg-black/95 border border-white/10 p-4 rounded-2xl text-[10px] font-bold text-gray-400 opacity-0 group-hover/calc:opacity-100 transition-all translate-y-2 group-hover/calc:translate-y-0 pointer-events-none z-50 shadow-2xl backdrop-blur-xl">
+                                <p className="text-primary-500 uppercase tracking-widest mb-2 flex items-center">
+                                    <Info className="w-3.5 h-3.5 mr-2" /> ¿Cómo funciona?
+                                </p>
+                                <p className="mb-2 leading-relaxed">
+                                    Aplica un margen de ganancia o descuento temporal a los precios que ves en pantalla.
+                                </p>
+                                <div className="space-y-1 bg-white/5 p-2 rounded-lg border border-white/5">
+                                    <p><span className="text-white font-black">+ :</span> Aumenta precio.</p>
+                                    <p><span className="text-white font-black">- :</span> Aplica descuento.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Filters and Actions (User Only) */}
+                        {user && (
+                            <div className="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto items-center">
+                                {role === 'admin' && (
+                                    <button
+                                        onClick={handleBulkUpdateThresholds}
+                                        className="p-3 md:px-5 md:py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20"
+                                    >
+                                        <Settings className="w-4 h-4 md:mr-2" />
+                                        <span className="hidden md:inline">Bloque</span>
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setFilter('all')}
+                                    className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-lg' : 'bg-white/5 text-gray-400 border border-white/5'}`}
+                                >
+                                    <Filter className="w-4 h-4 md:mr-2" />
+                                    <span className="hidden md:inline">Todos</span>
+                                </button>
+                                <button
+                                    onClick={() => setFilter('offers')}
+                                    className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}
+                                >
+                                    <Tag className="w-4 h-4 md:mr-2" />
+                                    <span className="hidden md:inline">Ofertas</span>
+                                </button>
+                                <button
+                                    onClick={() => setFilter('news')}
+                                    className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}
+                                >
+                                    <Clock className="w-4 h-4 md:mr-2" />
+                                    <span className="hidden md:inline">Novedades</span>
+                                </button>
+                                
+                                <button
+                                    onClick={handleDownloadExcel}
+                                    title="Descargar Excel"
+                                    className="p-3 md:px-5 md:py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all bg-primary-500/10 text-primary-500 border border-primary-500/20"
+                                >
+                                    <Download className="w-5 h-5 md:w-4 md:h-4 md:mr-2" />
+                                    <span className="hidden md:inline">Excel</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Grid */}
@@ -267,15 +343,17 @@ export const Catalog = () => {
                 <div className={viewMode === 'grid' 
                     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
                     : "space-y-3"}>
-                    {products.map((product) => {
-                        const isOffer = product.precio_oferta > 0;
-                        const finalPrice = isOffer ? product.precio_oferta : product.precio_lista * coeficiente;
-                        const displayApp = product.aplicacion?.replace(/=/g, 'IDEM ') || '';
+                        {products.map((product) => {
+                            const isOffer = product.precio_oferta > 0;
+                            const basePrice = isOffer ? product.precio_oferta : product.precio_lista * coeficiente;
+                            const markup = parseFloat(calcValue) || 0;
+                            const finalPrice = basePrice * (1 + markup / 100);
+                            const displayApp = product.aplicacion?.replace(/=/g, 'IDEM ') || '';
 
-                        if (viewMode === 'compact') {
-                            return (
-                                <div key={product.codigo} className="bg-[#1A1A1A] rounded-xl border border-white/5 hover:border-primary-500/50 transition-all p-3 flex items-center gap-4 group">
-                                    <div className="w-16 h-16 bg-black rounded-lg overflow-hidden flex-shrink-0">
+                            if (viewMode === 'compact') {
+                                return (
+                                    <div key={product.codigo} className="bg-surface rounded-xl border border-white/5 hover:border-primary-500/50 transition-all p-3 flex items-center gap-4 group">
+                                        <div className="w-16 h-16 bg-surface-darker rounded-lg overflow-hidden flex-shrink-0">
                                         <img
                                             src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
                                             alt={product.codigo}
@@ -302,21 +380,29 @@ export const Catalog = () => {
                                         <h3 className="text-xs font-bold text-gray-200 truncate group-hover:text-primary-500 transition-colors uppercase tracking-tight">
                                             {displayApp}
                                         </h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            {product.stock_status && (
-                                                <div className={`w-2 h-2 rounded-full ${
-                                                    product.stock_status === 'red' ? 'bg-red-500' : 
-                                                    product.stock_status === 'yellow' ? 'bg-yellow-400' : 
-                                                    'bg-green-500'
-                                                }`} />
-                                            )}
-                                            {isOffer && (
-                                                <span className="text-[10px] line-through text-gray-600 font-bold">${formatPrice(product.precio_lista * coeficiente)}</span>
-                                            )}
-                                            <span className={`text-sm font-black ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
-                                                ${formatPrice(finalPrice)}
-                                            </span>
-                                        </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                {product.stock_status && (
+                                                    <div className={`w-2 h-2 rounded-full ${
+                                                        product.stock_status === 'red' ? 'bg-red-500' : 
+                                                        product.stock_status === 'yellow' ? 'bg-yellow-400' : 
+                                                        'bg-green-500'
+                                                    }`} />
+                                                )}
+                                                {isOffer && (
+                                                    <span className="text-[10px] line-through text-gray-600 font-bold">${formatPrice((product.precio_lista * coeficiente) * (1 + (parseFloat(calcValue) || 0) / 100))}</span>
+                                                )}
+                                                
+                                                <div className="flex items-baseline gap-2">
+                                                    {markup !== 0 && (
+                                                        <span className="text-[10px] font-bold text-gray-500 tabular-nums">
+                                                            ${formatPrice(basePrice)}
+                                                        </span>
+                                                    )}
+                                                    <span className={`text-sm font-black ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
+                                                        ${formatPrice(finalPrice)}
+                                                    </span>
+                                                </div>
+                                            </div>
                                     </div>
 
                                     <div className="flex flex-col gap-2">
@@ -341,16 +427,16 @@ export const Catalog = () => {
                             );
                         }
 
-                        return (
-                            <div key={product.codigo} className="bg-[#1A1A1A] rounded-2xl shadow-xl border border-white/5 hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
-                                {user && isOffer && (
-                                    <div className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg z-20 shadow-lg flex items-center uppercase tracking-widest">
-                                        <Tag className="w-2 h-2 mr-1" /> OFERTA
-                                    </div>
-                                )}
-                                
-                                {/* Product Image Container */}
-                                <div className="w-full h-48 bg-[#121212] flex items-center justify-center group-hover:bg-[#0A0A0A] transition-colors relative overflow-hidden">
+                            return (
+                                <div key={product.codigo} className="bg-surface rounded-2xl shadow-xl border border-white/5 hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
+                                    {user && isOffer && (
+                                        <div className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg z-20 shadow-lg flex items-center uppercase tracking-widest">
+                                            <Tag className="w-2 h-2 mr-1" /> OFERTA
+                                        </div>
+                                    )}
+                                    
+                                    {/* Product Image Container */}
+                                    <div className="w-full h-48 bg-surface-darker flex items-center justify-center group-hover:bg-surface-light transition-colors relative overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                     <img
                                         src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
@@ -436,16 +522,18 @@ export const Catalog = () => {
                                 {user && (
                                     <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between">
                                         <div className="flex flex-col">
-                                            {isOffer && (
-                                                <span className="text-[10px] line-through text-gray-600 font-bold tracking-tight mb-0.5">
-                                                    ${formatPrice(product.precio_lista * coeficiente)}
-                                                </span>
-                                            )}
-                                            <div className="flex items-baseline">
-                                                <span className="text-xs font-black text-primary-500/80 mr-1">$</span>
-                                                <span className={`text-2xl font-black tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
-                                                    {formatPrice(finalPrice)}
-                                                </span>
+                                            <div className="flex flex-col">
+                                                {markup !== 0 && (
+                                                    <span className="text-[10px] font-bold text-gray-500 tabular-nums mb-0.5">
+                                                        Original: ${formatPrice(basePrice)}
+                                                    </span>
+                                                )}
+                                                <div className="flex items-baseline">
+                                                    <span className="text-xs font-black text-primary-500/80 mr-1">$</span>
+                                                    <span className={`text-2xl font-black tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
+                                                        {formatPrice(finalPrice)}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         
@@ -473,7 +561,7 @@ export const Catalog = () => {
                         className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
                         onClick={() => setSelectedInfoProduct(null)} 
                     />
-                    <div className="relative bg-[#1A1A1A] border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
+                    <div className="relative bg-surface border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
                         {/* Modal Header */}
                         <div className="bg-gradient-to-r from-primary-500/20 to-transparent p-6 border-b border-white/5">
                             <div className="flex justify-between items-start">
@@ -500,7 +588,7 @@ export const Catalog = () => {
                             <div className="space-y-6">
                                 <div>
                                     <div className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Información Adicional</div>
-                                    <div className="bg-black/30 p-5 rounded-2xl border border-white/5 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap italic">
+                                    <div className="bg-surface-darker p-5 rounded-2xl border border-white/5 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap italic">
                                         {selectedInfoProduct.info}
                                     </div>
                                 </div>
@@ -519,8 +607,8 @@ export const Catalog = () => {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-6 bg-[#121212] border-t border-white/5 flex justify-end">
-                            <button
+                        <div className="p-6 bg-surface-darker border-t border-white/5 flex justify-end">
+                             <button
                                 onClick={() => setSelectedInfoProduct(null)}
                                 className="px-6 py-2.5 bg-primary-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)] active:scale-95"
                             >
@@ -538,7 +626,7 @@ export const Catalog = () => {
                         className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
                         onClick={() => setEditingProductInfo(null)} 
                     />
-                    <div className="relative bg-[#1A1A1A] border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
+                    <div className="relative bg-surface border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
                         <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border-white/5">
                             <h3 className="text-xl font-bold text-white tracking-tight flex items-center">
                                 <Edit3 className="w-5 h-5 mr-2 text-blue-400" />
@@ -551,12 +639,12 @@ export const Catalog = () => {
                             <textarea
                                 value={tempInfo}
                                 onChange={(e) => setTempInfo(e.target.value)}
-                                className="w-full h-48 bg-black/30 border border-white/10 rounded-2xl p-4 text-gray-200 text-sm focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700 resize-none"
+                                className="w-full h-48 bg-surface-darker border border-white/10 rounded-2xl p-4 text-gray-200 text-sm focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700 resize-none"
                                 placeholder="Escribe aquí la información técnica o detalles del producto..."
                             />
                         </div>
 
-                        <div className="p-6 bg-[#121212] border-t border-white/5 flex justify-end space-x-3">
+                        <div className="p-6 bg-surface-darker border-t border-white/5 flex justify-end space-x-3">
                             <button
                                 onClick={() => setEditingProductInfo(null)}
                                 className="px-6 py-2.5 text-gray-500 font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest"
