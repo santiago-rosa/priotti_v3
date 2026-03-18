@@ -162,12 +162,21 @@ export const Catalog = () => {
         }
     };
 
+    const LOCAL_DEFAULT = '/images/products/default.png';
+    const API_DEFAULT   = `${import.meta.env.VITE_API_URL}/products/image/default`;
+
     const handleImageError = (codigo: string, e: React.SyntheticEvent<HTMLImageElement>) => {
         const target = e.currentTarget;
-        if (!target.src.includes('default')) {
-            target.src = `${import.meta.env.VITE_API_URL}/products/image/default`;
-            setDefaultImageProducts(prev => new Set(prev).add(codigo));
+        if (target.src.includes(API_DEFAULT) || target.src.endsWith(LOCAL_DEFAULT)) {
+            // Already on a fallback — try the local asset as last resort
+            if (!target.src.endsWith(LOCAL_DEFAULT)) {
+                target.src = LOCAL_DEFAULT;
+            }
+            return;
         }
+        // First failure: switch to API default and mark the product
+        target.src = API_DEFAULT;
+        setDefaultImageProducts(prev => new Set(prev).add(codigo));
     };
 
     const resetUploadModal = () => {

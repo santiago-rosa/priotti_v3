@@ -25,7 +25,8 @@ function resolveImagesPath(): string
         return $configured;
     }
 
-    // Relative path → resolve from project root  (php-api/)
+    // Relative path → resolve relative to the repo root (parent of php-api/)
+    // __DIR__ = php-api/src/Routes  →  3 levels up = priotti_v3/ (repo root)
     $projectRoot = realpath(__DIR__ . '/../../../') ?: dirname(__DIR__, 3);
     return rtrim($projectRoot, '/') . '/' . ltrim($configured, '/');
 }
@@ -350,36 +351,47 @@ $app->post('/api/products/{codigo}/image-from-url', function (Request $request, 
 
     try {
         // ── Download the Image ────────────────────────────────────────────────
+        // Build a Referer from the URL's own origin so CDN hotlink checks pass
+        $urlParts = parse_url($url);
+        $referer  = ($urlParts['scheme'] ?? 'https') . '://' . ($urlParts['host'] ?? '');
+
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_MAXREDIRS      => 8,
             CURLOPT_TIMEOUT        => 20,
-            CURLOPT_SSL_VERIFYPEER => false,   // tolerate self-signed certs
-            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
-            CURLOPT_HTTPHEADER     => ['Accept: image/*,*/*;q=0.8'],
-            CURLOPT_MAXFILESIZE    => 5 * 1024 * 1024, // 5 MB cap
+            CURLOPT_CONNECTTIMEOUT => 8,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            CURLOPT_HTTPHEADER     => [
+                'Accept: image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+                'Accept-Language: es-AR,es;q=0.9,en;q=0.8',
+                'Referer: ' . $referer . '/',
+            ],
         ]);
 
         $imageData   = curl_exec($ch);
         $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
         $httpCode    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $finalUrl    = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         $curlError   = curl_error($ch);
+        $curlErrNo   = curl_errno($ch);
         curl_close($ch);
 
-        if ($curlError || $imageData === false) {
-            $response->getBody()->write(json_encode(['error' => 'No se pudo descargar la imagen: ' . $curlError]));
+        if ($curlErrNo || $imageData === false) {
+            $response->getBody()->write(json_encode(['error' => "Error de red al descargar la imagen (cURL $curlErrNo): $curlError"]));
             return $response->withStatus(502)->withHeader('Content-Type', 'application/json');
         }
 
         if ($httpCode < 200 || $httpCode >= 300) {
-            $response->getBody()->write(json_encode(['error' => "El servidor remoto respondió con código $httpCode"]));
+            $response->getBody()->write(json_encode(['error' => "El servidor de la imagen respondió con HTTP $httpCode. Probá copiando la URL directa de la imagen (clic derecho → 'Copiar dirección de imagen')."]));
             return $response->withStatus(502)->withHeader('Content-Type', 'application/json');
         }
 
         if (empty($imageData)) {
-            $response->getBody()->write(json_encode(['error' => 'La URL devolvió contenido vacío']));
+            $response->getBody()->write(json_encode(['error' => 'La URL devolvió contenido vacío.']));
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
@@ -468,8 +480,8 @@ $app->get('/api/products/image/{codigo:.+}', function (Request $request, Respons
 
     // 2. Resolve images directory
     $siteRoot = realpath(__DIR__ . '/../../../') ?: dirname(__DIR__, 3);
-    $basePath = resolveImagesPath();
-    $filePath = null;
+    $basePath  = resolveImagesPath();
+    $filePath  = null;
 
     // 3. Apply transformation rules and search variants
     $transformed = str_replace(['/', ' '], ['-', '_'], $codigo);
