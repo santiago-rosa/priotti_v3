@@ -35,29 +35,39 @@ async function main() {
             return;
         }
 
-        // Selección de archivos
-        console.log(chalk.yellow('Selección de archivos para comparar:'));
-        
-        const { newFileName } = await inquirer.prompt([
-            {
-                type: 'list',
-                name: 'newFileName',
-                message: 'Seleccione el archivo NUEVO (el que tiene los datos actuales):',
-                choices: allFiles
-            }
-        ]);
+        let newFileName, actualFileName;
+        const isAuto = process.argv.includes('--auto');
 
-        const otherFiles = allFiles.filter(f => f !== newFileName);
+        if (isAuto) {
+            newFileName = allFiles[0];
+            actualFileName = allFiles[1];
+            console.log(chalk.yellow('Modo AUTOMÁTICO activado. Seleccionando archivos automáticamente...'));
+        } else {
+            // Selección de archivos
+            console.log(chalk.yellow('Selección de archivos para comparar:'));
+            
+            const newFileAns = await inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'newFileName',
+                    message: 'Seleccione el archivo NUEVO (el que tiene los datos actuales):',
+                    choices: allFiles
+                }
+            ]);
+            newFileName = newFileAns.newFileName;
 
-        const { oldFileName } = await inquirer.prompt([
-            {
-                type: 'list',
-                name: 'oldFileName',
-                message: 'Seleccione el archivo VIEJO (para buscar diferencias):',
-                choices: otherFiles
-            }
-        ]);
-        const actualFileName = oldFileName;
+            const otherFiles = allFiles.filter(f => f !== newFileName);
+
+            const oldFileAns = await inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'oldFileName',
+                    message: 'Seleccione el archivo VIEJO (para buscar diferencias):',
+                    choices: otherFiles
+                }
+            ]);
+            actualFileName = oldFileAns.oldFileName;
+        }
 
         console.log(`\n  ${chalk.gray('Nuevo (Actual):')} ${chalk.green(newFileName)}`);
         console.log(`  ${chalk.gray('Base (Viejo):')} ${chalk.white(actualFileName)}\n`);
@@ -71,6 +81,14 @@ async function main() {
         let diffData = buildUpdateData(actualList, newList);
         
         // --- MENU INTERACTIVO ---
+        if (isAuto) {
+            showSummary(diffData);
+            console.log(chalk.blue('Actualizando automáticamente por ejecución desatendida...'));
+            await performUpdate(diffData);
+            console.log(chalk.gray('Programa finalizado (Modo Auto).'));
+            return;
+        }
+
         let exit = false;
         while (!exit) {
             const { choice } = await inquirer.prompt([
@@ -311,6 +329,16 @@ function buildListFromExcel(filename) {
             imagen: imagen,
             rowNum: index + 2 // Fila real en Excel (index 0 es fila 2 con encabezado)
         };
+
+        if (row.smin !== undefined && row.smin !== null && row.smin !== '') {
+            const parsedSmin = parseInt(row.smin);
+            json[codigo].stock_low = isNaN(parsedSmin) ? 0 : parsedSmin;
+        }
+        
+        if (row.smax !== undefined && row.smax !== null && row.smax !== '') {
+            const parsedSmax = parseInt(row.smax);
+            json[codigo].stock_medium = isNaN(parsedSmax) ? 0 : parsedSmax;
+        }
     });
     return json;
 }
