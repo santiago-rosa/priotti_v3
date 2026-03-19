@@ -76,8 +76,8 @@ $app->post('/api/import/bulk-update', function (Request $request, Response $resp
         $db->beginTransaction();
 
         // Process Inserts (IGNORE ensures we don't overwrite existing items)
-        $sqlInsert = "INSERT IGNORE INTO productos (codigo, aplicacion, marca, rubro, precio_lista, precio_oferta, info, imagen, vigente, fecha_agregado, fecha_modif) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())";
+        $sqlInsert = "INSERT IGNORE INTO productos (codigo, aplicacion, marca, rubro, precio_lista, precio_oferta, info, imagen, vigente, fecha_agregado, fecha_modif, stock_low, stock_medium) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW(), ?, ?)";
         $stmtInsert = $db->prepare($sqlInsert);
         foreach ($data['insert'] as $item) {
             $stmtInsert->execute([
@@ -89,6 +89,8 @@ $app->post('/api/import/bulk-update', function (Request $request, Response $resp
                 $item['precio_oferta'] ?? 0,
                 $item['info'] ?? '',
                 $item['imagen'] ?? '',
+                $item['stock_low'] ?? 0,
+                $item['stock_medium'] ?? 0,
             ]);
         }
 
@@ -124,6 +126,14 @@ $app->post('/api/import/bulk-update', function (Request $request, Response $resp
             if (isset($item['imagen'])) {
                 $fields[] = "imagen = ?";
                 $params[] = $item['imagen'];
+            }
+            if (isset($item['stock_low'])) {
+                $fields[] = "stock_low = ?";
+                $params[] = $item['stock_low'];
+            }
+            if (isset($item['stock_medium'])) {
+                $fields[] = "stock_medium = ?";
+                $params[] = $item['stock_medium'];
             }
 
             if (!empty($fields)) {
