@@ -4,6 +4,7 @@ import { formatPrice } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
 import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X, Calculator, ChevronDown, ChevronUp, ImagePlus, Upload, CheckCircle, Globe, Link2, ExternalLink } from 'lucide-react';
+import logoFallback from '../assets/logopriotti.png';
 
 interface Product {
     codigo: string;
@@ -162,20 +163,13 @@ export const Catalog = () => {
         }
     };
 
-    const LOCAL_DEFAULT = '/images/products/default.png';
-    const API_DEFAULT   = `${import.meta.env.VITE_API_URL}/products/image/default`;
-
     const handleImageError = (codigo: string, e: React.SyntheticEvent<HTMLImageElement>) => {
         const target = e.currentTarget;
-        if (target.src.includes(API_DEFAULT) || target.src.endsWith(LOCAL_DEFAULT)) {
-            // Already on a fallback — try the local asset as last resort
-            if (!target.src.endsWith(LOCAL_DEFAULT)) {
-                target.src = LOCAL_DEFAULT;
-            }
-            return;
-        }
-        // First failure: switch to API default and mark the product
-        target.src = API_DEFAULT;
+        // Guard: if we already switched to the fallback, do nothing (prevents infinite loop)
+        if (target.getAttribute('data-fallback')) return;
+        target.setAttribute('data-fallback', '1');
+        // Use the locally-bundled logo — zero extra HTTP requests
+        target.src = logoFallback;
         setDefaultImageProducts(prev => new Set(prev).add(codigo));
     };
 
