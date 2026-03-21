@@ -32,6 +32,7 @@ async function main() {
         if (allFiles.length < 2) {
             console.error(chalk.red(`\nError: Se necesitan al menos 2 archivos .xls en la carpeta 'listas' para realizar la comparación.`));
             console.log(chalk.yellow(`Archivos encontrados: ${allFiles.length}`));
+            logExecution('error', 'No hay suficientes archivos xls para comparar.', { inserted: 0, updated: 0, deleted: 0 });
             return;
         }
 
@@ -132,7 +133,45 @@ async function main() {
 
     } catch (err) {
         console.error(chalk.red('\n❌ Ocurrió un error inesperado:'), err.message);
+        logExecution('error', 'Error inesperado: ' + err.message, { inserted: 0, updated: 0, deleted: 0 });
     }
+}
+
+function logExecution(status, message, details) {
+    const logPath = './registro.json';
+    let data = { last_execution: "", last_status: "", history: [] };
+    
+    try {
+        if (fs.existsSync(logPath)) {
+            const fileContent = fs.readFileSync(logPath, 'utf8');
+            data = JSON.parse(fileContent);
+        }
+    } catch (e) {
+        data = { last_execution: "", last_status: "", history: [] };
+    }
+
+    if (!Array.isArray(data.history)) {
+        data.history = [];
+    }
+
+    const timestamp = new Date().toLocaleString();
+    data.last_execution = timestamp;
+    data.last_status = status;
+
+    const newLog = {
+        timestamp: timestamp,
+        status: status,
+        message: message,
+        changes: details
+    };
+
+    data.history.unshift(newLog);
+
+    if (data.history.length > 200) {
+        data.history = data.history.slice(0, 200);
+    }
+
+    fs.writeFileSync(logPath, JSON.stringify(data, null, 2));
 }
 
 function showSummary(data) {
@@ -223,29 +262,63 @@ async function performUpdate(data) {
         const token = loginRes.data.token;
         console.log(chalk.green('✔ Autenticación exitosa.'));
 
-        console.log(chalk.blue('2. Enviando datos masivos... (espere por favor)'));
-        const res = await axios.post(`${API_URL}/import/bulk-update`, data, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const BATCH_SIZE = 2000;
+        const totalItems = data.insert.length + data.update.length + data.delete.length;
+        
+        console.log(chalk.blue(`2. Enviando datos masivos en lotes de ${BATCH_SIZE}... (Total: ${totalItems})`));
+        
+        let allDetails = { inserted: 0, updated: 0, deleted: 0 };
+        
+        // Función auxiliar para partir arrays
+        const chunkArray = (arr, size) => arr.length ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)] : [];
+        
+        const insertChunks = chunkArray(data.insert, BATCH_SIZE);
+        const updateChunks = chunkArray(data.update, BATCH_SIZE);
+        const deleteChunks = chunkArray(data.delete, BATCH_SIZE);
+        
+        const maxBatches = Math.max(insertChunks.length || 1, updateChunks.length || 1, deleteChunks.length || 1);
+        const effectiveBatches = Math.max(insertChunks.length, updateChunks.length, deleteChunks.length);
+        
+        if (effectiveBatches === 0) {
+            console.log(chalk.yellow('No hay datos para enviar.'));
+            logExecution('success', 'Sin cambios detectados en el Excel.', { inserted: 0, updated: 0, deleted: 0 });
+            return;
+        }
 
-        if (res.status == 200) {
-            console.log(chalk.bold.green('\n✅ SINCRONIZACIÓN COMPLETADA CON ÉXITO'));
-            console.log(chalk.white(`Servidor: ${res.data.message}`));
-            
-            // Guardar registro
-            const log = {
-                fecha: new Date().toLocaleString(),
-                detalles: res.data.details
+        for (let i = 0; i < effectiveBatches; i++) {
+            const batchData = {
+                insert: insertChunks[i] || [],
+                update: updateChunks[i] || [],
+                delete: deleteChunks[i] || [],
+                novelties: data.novelties
             };
-            fs.writeFileSync('./registro.json', JSON.stringify(log, null, 2));
-            console.log(chalk.gray('Registro guardado en registro.json\n'));
+            
+            console.log(chalk.gray(`   => Enviando lote ${i + 1} de ${effectiveBatches}...`));
+            
+            const res = await axios.post(`${API_URL}/import/bulk-update`, batchData, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (res.status == 200 && res.data.details) {
+                allDetails.inserted += res.data.details.inserted || 0;
+                allDetails.updated += res.data.details.updated || 0;
+                allDetails.deleted += res.data.details.deleted || 0;
+            }
         }
+
+        console.log(chalk.bold.green('\n✅ SINCRONIZACIÓN COMPLETADA CON ÉXITO'));
+        logExecution('success', 'Sincronización masiva con éxito', allDetails);
+        console.log(chalk.gray('Registro guardado en registro.json\n'));
     } catch (err) {
+        let msg = '';
         if (err.response) {
-            console.error(chalk.red('\n❌ Error del servidor:'), err.response.data.error || err.response.statusText);
+            msg = err.response.data.error || err.response.statusText;
+            console.error(chalk.red('\n❌ Error del servidor:'), msg);
         } else {
-            console.error(chalk.red('\n❌ Error de red:'), err.message);
+            msg = err.message;
+            console.error(chalk.red('\n❌ Error de red:'), msg);
         }
+        logExecution('error', msg, { inserted: 0, updated: 0, deleted: 0 });
     }
 }
 
@@ -289,6 +362,13 @@ function buildChangesOnly(oldItem, newItem) {
         // no lo incluimos en el update para no borrar lo que ya existe en la DB.
         if (key === 'info' && !newItem[key]) return;
 
+        // REGLA: Siempre enviar los niveles de stock para forzar la sincronía
+        // con la base de datos (que por defecto empezó en 0).
+        if (['stock', 'stock_low', 'stock_medium'].includes(key)) {
+            if (newItem[key] !== undefined) diffItem[key] = newItem[key];
+            return;
+        }
+
         if (JSON.stringify(newItem[key]) !== JSON.stringify(oldItem[key])) {
             diffItem[key] = newItem[key];
         }
@@ -326,9 +406,13 @@ function buildListFromExcel(filename) {
             precio: row.precio,
             precio_oferta: row.oferta || 0,
             info: fixCharacters(buildInfo(row)),
-            imagen: imagen,
-            rowNum: index + 2 // Fila real en Excel (index 0 es fila 2 con encabezado)
+            imagen: imagen
         };
+
+        if (row.stoc !== undefined && row.stoc !== null && row.stoc !== '') {
+            const parsedStoc = parseInt(row.stoc);
+            json[codigo].stock = isNaN(parsedStoc) ? 0 : parsedStoc;
+        }
 
         if (row.smin !== undefined && row.smin !== null && row.smin !== '') {
             const parsedSmin = parseInt(row.smin);
