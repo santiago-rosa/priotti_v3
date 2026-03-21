@@ -1,0 +1,14 @@
+# Configuración de la API
+# Para pruebas locales (DESCOMENTADO PARA ESTA PRUEBA):
+#API_URL=http://localhost:8080/api
+
+# Para producción (Descomentar y usar cuando esté en la compu del admin):
+API_URL=https://www.felipepriotti.com.ar/php-api/public/api
+#API_URL=https://felipepriotti.test.com.ar.felipepriotti.com.ar/php-api/public/api
+
+# Credenciales del Administrador (Núm. Cliente y CUIT)
+ADMIN_USER=test748
+ADMIN_CUID=test748
+
+# Ruta donde se encuentran los archivos Excel .xls
+LISTAS_PATH=./listas
