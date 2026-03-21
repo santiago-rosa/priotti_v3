@@ -204,3 +204,39 @@ $app->get('/api/import/status', function (Request $request, Response $response) 
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware());
+
+$app->get('/api/admin/statistics', function (Request $request, Response $response) {
+    try {
+        $db = Database::getConnection();
+
+        $stmtOrders30d = $db->query("SELECT COUNT(*) FROM pedidos WHERE fechapedido >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+        $ordersCount30d = (int)$stmtOrders30d->fetchColumn();
+
+        $stmtActiveClients = $db->query("SELECT COUNT(DISTINCT cliente) FROM pedidos WHERE fechapedido >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+        $activeClients30d = (int)$stmtActiveClients->fetchColumn();
+
+        $stmtTotalClients = $db->query("SELECT COUNT(*) FROM clientes WHERE role = 'client'");
+        $totalClients = (int)$stmtTotalClients->fetchColumn();
+
+        $stmtTopClients = $db->query("
+            SELECT c.nombre, COUNT(p.idpedidos) as total_pedidos
+            FROM pedidos p
+            JOIN clientes c ON p.cliente = c.id
+            GROUP BY p.cliente
+            ORDER BY total_pedidos DESC
+            LIMIT 5
+        ");
+        $topClients = $stmtTopClients->fetchAll();
+
+        $response->getBody()->write(json_encode([
+            'orders30d' => $ordersCount30d,
+            'activeClients30d' => $activeClients30d,
+            'totalClients' => $totalClients,
+            'topClients' => $topClients
+        ]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => 'Error fetching statistics: ' . $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));

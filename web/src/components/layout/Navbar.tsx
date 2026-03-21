@@ -27,7 +27,7 @@ export const Navbar = () => {
             ? [
                 { name: 'Catálogo', path: '/' },
                 { name: 'Mis Clientes', path: '/admin/clients' },
-                { name: 'Actualizar Sistema', path: '/admin/import' },
+                { name: 'Sistema', path: '/admin/import' },
             ]
             : [
                 { name: 'Catálogo', path: '/' },
