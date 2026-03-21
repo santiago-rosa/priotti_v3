@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/axios';
 import { formatPrice } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
@@ -25,6 +25,9 @@ export const Catalog = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'offers' | 'news'>('all');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
     const [loading, setLoading] = useState(false);
     const [selectedInfoProduct, setSelectedInfoProduct] = useState<Product | null>(null);
     const [editingProductInfo, setEditingProductInfo] = useState<Product | null>(null);
@@ -54,29 +57,35 @@ export const Catalog = () => {
 
     const coeficiente = user?.coeficiente || 1;
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            setLoading(true);
-            try {
-                const params = new URLSearchParams();
-                if (search) params.append('search', search);
-                if (filter !== 'all') params.append('filter', filter);
+    const fetchProducts = useCallback(async (showLoader = false, overridePage?: number) => {
+        if (showLoader) setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (filter !== 'all') params.append('filter', filter);
+            params.append('page', (overridePage || page).toString());
+            params.append('limit', '30');
 
-                const response = await api.get(`/products?${params.toString()}`);
-                setProducts(response.data.data);
-            } catch (error) {
-                console.error('Error fetching products', error);
-            } finally {
-                setLoading(false);
+            const response = await api.get(`/products?${params.toString()}`);
+            setProducts(response.data.data);
+            if (response.data.pagination) {
+                setTotalPages(response.data.pagination.totalPages);
+                setTotalItems(response.data.pagination.total);
             }
-        };
+        } catch (error) {
+            console.error('Error fetching products', error);
+        } finally {
+            if (showLoader) setLoading(false);
+        }
+    }, [search, filter, page]);
 
+    useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchProducts();
+            fetchProducts(true);
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [search, filter]);
+    }, [fetchProducts]);
 
     const handleBulkUpdateThresholds = async () => {
         try {
@@ -108,8 +117,7 @@ export const Catalog = () => {
             alert(`Umbrales actualizados para ${marca}`);
             
             // Refresh products
-            const response = await api.get('/products');
-            setProducts(response.data.data);
+            await fetchProducts(false);
         } catch (error) {
             console.error('Error in bulk update', error);
             alert('Error al realizar actualización en bloque');
@@ -136,8 +144,7 @@ export const Catalog = () => {
             });
             
             // Refresh to get calculated status from DB
-            const response = await api.get('/products');
-            setProducts(response.data.data);
+            await fetchProducts(false);
         } catch (error: any) {
             console.error('Error updating stock', error);
             const msg = error.response?.data?.error || 'Error al actualizar stock';
@@ -155,8 +162,7 @@ export const Catalog = () => {
             setEditingProductInfo(null);
             
             // Refresh products
-            const response = await api.get('/products');
-            setProducts(response.data.data);
+            await fetchProducts(false);
         } catch (error: any) {
             console.error('Error updating info', error);
             alert(error.response?.data?.error || 'Error al actualizar información');
@@ -205,8 +211,7 @@ export const Catalog = () => {
             setUploadSuccess(true);
             setDefaultImageProducts(prev => { const next = new Set(prev); next.delete(uploadingProduct.codigo); return next; });
             setTimeout(async () => {
-                const response = await api.get('/products');
-                setProducts(response.data.data);
+                await fetchProducts(false);
                 resetUploadModal();
             }, 1200);
         } catch (error: any) {
@@ -232,8 +237,7 @@ export const Catalog = () => {
             setUrlSaveSuccess(true);
             setDefaultImageProducts(prev => { const next = new Set(prev); next.delete(uploadingProduct.codigo); return next; });
             setTimeout(async () => {
-                const response = await api.get('/products');
-                setProducts(response.data.data);
+                await fetchProducts(false);
                 resetUploadModal();
             }, 1400);
         } catch (error: any) {
@@ -294,7 +298,7 @@ export const Catalog = () => {
                                 className="block w-full pl-10 pr-4 py-3 bg-surface-darker border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm transition-all text-white placeholder-gray-600 outline-none shadow-inner"
                                 placeholder="¿Qué estás buscando? (código, marca, rubro...)"
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                             />
                         </div>
 
@@ -394,21 +398,21 @@ export const Catalog = () => {
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => setFilter('all')}
+                                    onClick={() => { setFilter('all'); setPage(1); }}
                                     className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-lg' : 'bg-white/5 text-gray-400 border border-white/5'}`}
                                 >
                                     <Filter className="w-4 h-4 md:mr-2" />
                                     <span className="hidden md:inline">Todos</span>
                                 </button>
                                 <button
-                                    onClick={() => setFilter('offers')}
+                                    onClick={() => { setFilter('offers'); setPage(1); }}
                                     className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}
                                 >
                                     <Tag className="w-4 h-4 md:mr-2" />
                                     <span className="hidden md:inline">Ofertas</span>
                                 </button>
                                 <button
-                                    onClick={() => setFilter('news')}
+                                    onClick={() => { setFilter('news'); setPage(1); }}
                                     className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}
                                 >
                                     <Clock className="w-4 h-4 md:mr-2" />
@@ -430,6 +434,12 @@ export const Catalog = () => {
             </div>
 
             {/* Grid */}
+            {!loading && totalItems > 0 && (
+                <div className="flex justify-between items-center mb-2 text-[10px] font-black text-gray-500 px-2 uppercase tracking-widest">
+                    <span>{totalItems} resultados</span>
+                    <span>Pág {page} de {totalPages}</span>
+                </div>
+            )}
             {loading ? (
                 <div className="flex justify-center py-20">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -469,6 +479,15 @@ export const Catalog = () => {
                                                 title="Cargar imagen"
                                             >
                                                 <ImagePlus className="w-5 h-5 text-white" />
+                                            </button>
+                                        )}
+                                        {role === 'admin' && !defaultImageProducts.has(product.codigo) && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setUploadingProduct(product); setUploadFile(null); setUploadPreview(null); setUploadSuccess(false); }}
+                                                className="absolute bottom-1 right-1 z-30 p-1 bg-black/70 hover:bg-primary-500 text-white hover:text-black rounded transition-all opacity-0 group-hover/img:opacity-100 backdrop-blur-sm"
+                                                title="Reemplazar imagen"
+                                            >
+                                                <Upload className="w-3 h-3" />
                                             </button>
                                         )}
                                     </div>
@@ -541,7 +560,7 @@ export const Catalog = () => {
                                     )}
                                     
                                     {/* Product Image Container */}
-                                    <div className="w-full h-48 bg-surface-darker flex items-center justify-center group-hover:bg-surface-light transition-colors relative overflow-hidden">
+                                    <div className="w-full h-48 bg-surface-darker flex items-center justify-center group-hover:bg-surface-light transition-colors relative overflow-hidden group/img">
                                     <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                     <img
                                         src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
@@ -558,6 +577,15 @@ export const Catalog = () => {
                                         >
                                             <ImagePlus className="w-8 h-8 text-white drop-shadow-lg" />
                                             <span className="text-[10px] font-black text-white uppercase tracking-widest drop-shadow">Cargar Imagen</span>
+                                        </button>
+                                    )}
+                                    {role === 'admin' && !defaultImageProducts.has(product.codigo) && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setUploadingProduct(product); setUploadFile(null); setUploadPreview(null); setUploadSuccess(false); }}
+                                            className="absolute bottom-3 right-3 z-30 p-2.5 bg-black/70 hover:bg-primary-500 text-white hover:text-black rounded-lg transition-all opacity-0 group-hover/img:opacity-100 backdrop-blur-sm shadow-lg"
+                                            title="Reemplazar imagen"
+                                        >
+                                            <Upload className="w-4 h-4" />
                                         </button>
                                     )}
                                 </div>
@@ -661,6 +689,40 @@ export const Catalog = () => {
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {!loading && totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-8 mb-4 py-4 px-2 border-t border-white/10 relative z-10 w-full overflow-x-auto">
+                    <button
+                        onClick={() => { const newPage = Math.max(1, page - 1); setPage(newPage); fetchProducts(true, newPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        disabled={page === 1}
+                        className="p-2 rounded-xl bg-surface-darker text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-white/5 whitespace-nowrap text-xs font-bold"
+                    >
+                        &lt; Anterior
+                    </button>
+                    <div className="flex items-center space-x-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                            .map((p, i, arr) => (
+                                <React.Fragment key={p}>
+                                    {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-600 px-1">...</span>}
+                                    <button
+                                        onClick={() => { setPage(p); fetchProducts(true, p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${page === p ? 'bg-primary-500 text-black shadow-lg scale-110' : 'bg-surface-darker text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
+                                    >
+                                        {p}
+                                    </button>
+                                </React.Fragment>
+                            ))}
+                    </div>
+                    <button
+                        onClick={() => { const newPage = Math.min(totalPages, page + 1); setPage(newPage); fetchProducts(true, newPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        disabled={page === totalPages}
+                        className="p-2 rounded-xl bg-surface-darker text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-white/5 whitespace-nowrap text-xs font-bold"
+                    >
+                        Siguiente &gt;
+                    </button>
                 </div>
             )}
 
