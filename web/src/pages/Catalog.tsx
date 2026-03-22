@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/axios';
 import { formatPrice } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
@@ -25,10 +25,13 @@ export const Catalog = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'offers' | 'news'>('all');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
     const [loading, setLoading] = useState(false);
     const [selectedInfoProduct, setSelectedInfoProduct] = useState<Product | null>(null);
     const [editingProductInfo, setEditingProductInfo] = useState<Product | null>(null);
-    const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'compact'>('compact');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [showMobileControls, setShowMobileControls] = useState(false);
     const [defaultImageProducts, setDefaultImageProducts] = useState<Set<string>>(new Set());
@@ -54,29 +57,35 @@ export const Catalog = () => {
 
     const coeficiente = user?.coeficiente || 1;
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            setLoading(true);
-            try {
-                const params = new URLSearchParams();
-                if (search) params.append('search', search);
-                if (filter !== 'all') params.append('filter', filter);
+    const fetchProducts = useCallback(async (showLoader = false, overridePage?: number) => {
+        if (showLoader) setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (filter !== 'all') params.append('filter', filter);
+            params.append('page', (overridePage || page).toString());
+            params.append('limit', '30');
 
-                const response = await api.get(`/products?${params.toString()}`);
-                setProducts(response.data.data);
-            } catch (error) {
-                console.error('Error fetching products', error);
-            } finally {
-                setLoading(false);
+            const response = await api.get(`/products?${params.toString()}`);
+            setProducts(response.data.data);
+            if (response.data.pagination) {
+                setTotalPages(response.data.pagination.totalPages);
+                setTotalItems(response.data.pagination.total);
             }
-        };
+        } catch (error) {
+            console.error('Error fetching products', error);
+        } finally {
+            if (showLoader) setLoading(false);
+        }
+    }, [search, filter, page]);
 
+    useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchProducts();
+            fetchProducts(true);
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [search, filter]);
+    }, [fetchProducts]);
 
     const handleBulkUpdateThresholds = async () => {
         try {
@@ -108,8 +117,7 @@ export const Catalog = () => {
             alert(`Umbrales actualizados para ${marca}`);
             
             // Refresh products
-            const response = await api.get('/products');
-            setProducts(response.data.data);
+            await fetchProducts(false);
         } catch (error) {
             console.error('Error in bulk update', error);
             alert('Error al realizar actualización en bloque');
@@ -136,8 +144,7 @@ export const Catalog = () => {
             });
             
             // Refresh to get calculated status from DB
-            const response = await api.get('/products');
-            setProducts(response.data.data);
+            await fetchProducts(false);
         } catch (error: any) {
             console.error('Error updating stock', error);
             const msg = error.response?.data?.error || 'Error al actualizar stock';
@@ -155,8 +162,7 @@ export const Catalog = () => {
             setEditingProductInfo(null);
             
             // Refresh products
-            const response = await api.get('/products');
-            setProducts(response.data.data);
+            await fetchProducts(false);
         } catch (error: any) {
             console.error('Error updating info', error);
             alert(error.response?.data?.error || 'Error al actualizar información');
@@ -205,8 +211,7 @@ export const Catalog = () => {
             setUploadSuccess(true);
             setDefaultImageProducts(prev => { const next = new Set(prev); next.delete(uploadingProduct.codigo); return next; });
             setTimeout(async () => {
-                const response = await api.get('/products');
-                setProducts(response.data.data);
+                await fetchProducts(false);
                 resetUploadModal();
             }, 1200);
         } catch (error: any) {
@@ -232,8 +237,7 @@ export const Catalog = () => {
             setUrlSaveSuccess(true);
             setDefaultImageProducts(prev => { const next = new Set(prev); next.delete(uploadingProduct.codigo); return next; });
             setTimeout(async () => {
-                const response = await api.get('/products');
-                setProducts(response.data.data);
+                await fetchProducts(false);
                 resetUploadModal();
             }, 1400);
         } catch (error: any) {
@@ -294,7 +298,7 @@ export const Catalog = () => {
                                 className="block w-full pl-10 pr-4 py-3 bg-surface-darker border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm transition-all text-white placeholder-gray-600 outline-none shadow-inner"
                                 placeholder="¿Qué estás buscando? (código, marca, rubro...)"
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                             />
                         </div>
 
@@ -394,21 +398,21 @@ export const Catalog = () => {
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => setFilter('all')}
+                                    onClick={() => { setFilter('all'); setPage(1); }}
                                     className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-lg' : 'bg-white/5 text-gray-400 border border-white/5'}`}
                                 >
                                     <Filter className="w-4 h-4 md:mr-2" />
                                     <span className="hidden md:inline">Todos</span>
                                 </button>
                                 <button
-                                    onClick={() => setFilter('offers')}
+                                    onClick={() => { setFilter('offers'); setPage(1); }}
                                     className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}
                                 >
                                     <Tag className="w-4 h-4 md:mr-2" />
                                     <span className="hidden md:inline">Ofertas</span>
                                 </button>
                                 <button
-                                    onClick={() => setFilter('news')}
+                                    onClick={() => { setFilter('news'); setPage(1); }}
                                     className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}
                                 >
                                     <Clock className="w-4 h-4 md:mr-2" />
@@ -430,6 +434,12 @@ export const Catalog = () => {
             </div>
 
             {/* Grid */}
+            {!loading && totalItems > 0 && (
+                <div className="flex justify-between items-center mb-2 text-[10px] font-black text-gray-500 px-2 uppercase tracking-widest">
+                    <span>{totalItems} resultados</span>
+                    <span>Pág {page} de {totalPages}</span>
+                </div>
+            )}
             {loading ? (
                 <div className="flex justify-center py-20">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -471,27 +481,49 @@ export const Catalog = () => {
                                                 <ImagePlus className="w-5 h-5 text-white" />
                                             </button>
                                         )}
+                                        {role === 'admin' && !defaultImageProducts.has(product.codigo) && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setUploadingProduct(product); setUploadFile(null); setUploadPreview(null); setUploadSuccess(false); }}
+                                                className="absolute bottom-1 right-1 z-30 p-1 bg-black/70 hover:bg-primary-500 text-white hover:text-black rounded transition-all opacity-0 group-hover/img:opacity-100 backdrop-blur-sm"
+                                                title="Reemplazar imagen"
+                                            >
+                                                <Upload className="w-3 h-3" />
+                                            </button>
+                                        )}
                                     </div>
                                     
                                     <div className="flex-grow min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-[15px] font-black text-primary-500 bg-primary-500/10 px-2 py-0.5 rounded tracking-tighter uppercase whitespace-nowrap">
-                                                {product.codigo}
-                                            </span>
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase truncate">
-                                                {product.rubro} • {product.marca}
-                                            </span>
+                                            <div className="flex flex-col min-w-[120px]">
+                                                <span className="text-[15px] font-bold text-primary-500 tracking-widest uppercase leading-none mb-1">
+                                                    {product.codigo}
+                                                </span>
+                                                <span className="text-[15px] font-bold text-gray-400 uppercase truncate">
+                                                    {product.rubro} • {product.marca}
+                                                </span>
+                                            </div>
                                         </div>
                                         <h3 className="text-xs font-bold text-gray-200 truncate group-hover:text-primary-500 transition-colors uppercase tracking-tight">
                                             {displayApp}
                                         </h3>
                                             <div className="flex items-center gap-2 mt-1">
                                                 {product.stock_status && (
-                                                    <div className={`w-2 h-2 rounded-full ${
-                                                        product.stock_status === 'red' ? 'bg-red-500' : 
-                                                        product.stock_status === 'yellow' ? 'bg-yellow-400' : 
-                                                        'bg-green-500'
-                                                    }`} />
+                                                    <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border ${
+                                                        product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                                                        product.stock_status === 'yellow' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 
+                                                        'bg-green-500/10 text-green-500 border-green-500/20'
+                                                    }`}>
+                                                        <div className={`w-1 h-1 rounded-full ${
+                                                            product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
+                                                            product.stock_status === 'yellow' ? 'bg-yellow-500' : 
+                                                            'bg-green-500'
+                                                        }`} />
+                                                        <span>
+                                                            {product.stock_status === 'red' ? 'Sin stock' : 
+                                                             product.stock_status === 'yellow' ? 'Stock limitado' : 
+                                                             'En stock'}
+                                                        </span>
+                                                    </div>
                                                 )}
                                                 {isOffer && (
                                                     <span className="text-[10px] line-through text-gray-600 font-bold">${formatPrice((product.precio_lista * coeficiente) * (1 + (parseFloat(calcValue) || 0) / 100))}</span>
@@ -503,7 +535,7 @@ export const Catalog = () => {
                                                             ${formatPrice(basePrice)}
                                                         </span>
                                                     )}
-                                                    <span className={`text-sm font-black ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
+                                                    <span className={`text-sm font-bold ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
                                                         ${formatPrice(finalPrice)}
                                                     </span>
                                                 </div>
@@ -541,7 +573,7 @@ export const Catalog = () => {
                                     )}
                                     
                                     {/* Product Image Container */}
-                                    <div className="w-full h-48 bg-surface-darker flex items-center justify-center group-hover:bg-surface-light transition-colors relative overflow-hidden">
+                                    <div className="w-full h-48 bg-surface-darker flex items-center justify-center group-hover:bg-surface-light transition-colors relative overflow-hidden group/img">
                                     <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                     <img
                                         src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
@@ -560,22 +592,45 @@ export const Catalog = () => {
                                             <span className="text-[10px] font-black text-white uppercase tracking-widest drop-shadow">Cargar Imagen</span>
                                         </button>
                                     )}
+                                    {role === 'admin' && !defaultImageProducts.has(product.codigo) && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setUploadingProduct(product); setUploadFile(null); setUploadPreview(null); setUploadSuccess(false); }}
+                                            className="absolute bottom-3 right-3 z-30 p-2.5 bg-black/70 hover:bg-primary-500 text-white hover:text-black rounded-lg transition-all opacity-0 group-hover/img:opacity-100 backdrop-blur-sm shadow-lg"
+                                            title="Reemplazar imagen"
+                                        >
+                                            <Upload className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
 
-                                <div className="p-5 flex-grow">
-                                    {/* Tighter grouping for better identification */}
-                                    <div className="flex items-center gap-3 mb-3 bg-black/30 p-2.5 rounded-lg border border-white/5">
-                                        <span className="text-[15px] font-black text-primary-500 bg-primary-500/10 px-3 py-1.5 rounded tracking-widest uppercase">
-                                            {product.codigo}
-                                        </span>
-                                        <span className="text-[11px] font-bold text-gray-300 uppercase tracking-tight truncate">
-                                            {product.rubro} • {product.marca}
-                                        </span>
+                                <div className="p-4 flex-grow flex flex-col">
+                                    {/* Restructured info section to avoid truncation */}
+                                    <div className="space-y-2 mb-3 bg-black/30 p-3 rounded-xl border border-white/5">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Código</span>
+                                            <span className="text-[14px] font-bold text-primary-500 tracking-widest uppercase leading-none">
+                                                {product.codigo}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Rubro</span>
+                                            <span className="text-[13px] font-bold text-gray-200 uppercase leading-snug">
+                                                {product.rubro}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Marca</span>
+                                            <span className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">
+                                                {product.marca}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <h3 className="text-sm font-extrabold text-gray-100 mb-4 leading-snug group-hover:text-primary-500 transition-colors line-clamp-2 min-h-[2.5rem] tracking-tight uppercase">
-                                        {displayApp}
-                                    </h3>
+                                    {displayApp && (
+                                        <h3 className="text-xs font-black text-gray-100 mb-3 leading-snug group-hover:text-primary-500 transition-colors line-clamp-2 tracking-tight uppercase">
+                                            {displayApp}
+                                        </h3>
+                                    )}
                                     
                                     <div className="space-y-2">
                                         <div className="flex gap-2">
@@ -605,25 +660,36 @@ export const Catalog = () => {
                                     </div>
 
                                     {user && (
-                                        <div className="flex items-center space-x-2 mt-3 p-1">
+                                        <div className="flex items-center gap-2 mt-2 p-1">
                                             {product.stock_status && (
-                                                <div className={`w-3 h-3 rounded-full shadow-sm ${
-                                                    product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
-                                                    product.stock_status === 'yellow' ? 'bg-yellow-400' : 
-                                                    'bg-green-500'
-                                                }`} title={`Stock: ${product.stock_status}`} />
+                                                <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border ${
+                                                    product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                                                    product.stock_status === 'yellow' ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' : 
+                                                    'bg-green-500/10 text-green-500 border-green-500/20'
+                                                }`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${
+                                                        product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
+                                                        product.stock_status === 'yellow' ? 'bg-yellow-400' : 
+                                                        'bg-green-500'
+                                                    }`} />
+                                                    <span>
+                                                        {product.stock_status === 'red' ? 'Sin stock' : 
+                                                         product.stock_status === 'yellow' ? 'Stock limitado' : 
+                                                         'En stock'}
+                                                    </span>
+                                                </div>
                                             )}
-                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">
-                                                {role === 'admin' ? `Stock: ${product.stock}` : (product.stock_status ? 'Disponibilidad' : '')}
-                                            </span>
                                             {role === 'admin' && (
-                                                <button 
-                                                    onClick={() => handleUpdateStock(product)}
-                                                    className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-primary-500 transition-colors"
-                                                    title="Editar stock"
-                                                >
-                                                    <Edit2 className="w-3 h-3" />
-                                                </button>
+                                                <div className="flex items-center gap-1 ml-auto">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Stock: {product.stock}</span>
+                                                    <button 
+                                                        onClick={() => handleUpdateStock(product)}
+                                                        className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-primary-500 transition-colors"
+                                                        title="Editar stock"
+                                                    >
+                                                        <Edit2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     )}
@@ -639,8 +705,8 @@ export const Catalog = () => {
                                                     </span>
                                                 )}
                                                 <div className="flex items-baseline">
-                                                    <span className="text-xs font-black text-primary-500/80 mr-1">$</span>
-                                                    <span className={`text-2xl font-black tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
+                                                    <span className="text-xs font-bold text-primary-500/80 mr-1">$</span>
+                                                    <span className={`text-2xl font-bold tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
                                                         {formatPrice(finalPrice)}
                                                     </span>
                                                 </div>
@@ -661,6 +727,40 @@ export const Catalog = () => {
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {!loading && totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-8 mb-4 py-4 px-2 border-t border-white/10 relative z-10 w-full overflow-x-auto">
+                    <button
+                        onClick={() => { const newPage = Math.max(1, page - 1); setPage(newPage); fetchProducts(true, newPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        disabled={page === 1}
+                        className="p-2 rounded-xl bg-surface-darker text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-white/5 whitespace-nowrap text-xs font-bold"
+                    >
+                        &lt; Anterior
+                    </button>
+                    <div className="flex items-center space-x-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                            .map((p, i, arr) => (
+                                <React.Fragment key={p}>
+                                    {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-600 px-1">...</span>}
+                                    <button
+                                        onClick={() => { setPage(p); fetchProducts(true, p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${page === p ? 'bg-primary-500 text-black shadow-lg scale-110' : 'bg-surface-darker text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
+                                    >
+                                        {p}
+                                    </button>
+                                </React.Fragment>
+                            ))}
+                    </div>
+                    <button
+                        onClick={() => { const newPage = Math.min(totalPages, page + 1); setPage(newPage); fetchProducts(true, newPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        disabled={page === totalPages}
+                        className="p-2 rounded-xl bg-surface-darker text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-white/5 whitespace-nowrap text-xs font-bold"
+                    >
+                        Siguiente &gt;
+                    </button>
                 </div>
             )}
 

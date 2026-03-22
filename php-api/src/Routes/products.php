@@ -35,6 +35,9 @@ $app->get('/api/products', function (Request $request, Response $response) {
     $queryParams = $request->getQueryParams();
     $filter = $queryParams['filter'] ?? '';
     $search = $queryParams['search'] ?? '';
+    $page = isset($queryParams['page']) ? max(1, (int)$queryParams['page']) : 1;
+    $limit = isset($queryParams['limit']) ? max(1, (int)$queryParams['limit']) : 30;
+    $offset = ($page - 1) * $limit;
 
     try {
         $db = Database::getConnection();
@@ -45,8 +48,34 @@ $app->get('/api/products', function (Request $request, Response $response) {
         $showStockConfig = $configStmt->fetch();
         $showStockToClients = ($showStockConfig['value'] ?? '1') === '1';
         $isAdmin = ($user && $user->role === 'admin');
+        
         $params = [];
+        $whereSql = "WHERE vigente = 1";
 
+        if ($filter === 'offers') {
+            $whereSql .= " AND precio_oferta > 0";
+        }
+        elseif ($filter === 'news') {
+            $whereSql .= " AND fecha_agregado > DATE_SUB(NOW(), INTERVAL 2 MONTH)";
+        }
+
+        if (!empty($search)) {
+            $terms = array_slice(explode(' ', $search), 0, 5);
+            foreach ($terms as $i => $term) {
+                $whereSql .= " AND (codigo LIKE ? OR aplicacion LIKE ? OR marca LIKE ? OR rubro LIKE ? OR info LIKE ?)";
+                $t = "%$term%";
+                array_push($params, $t, $t, $t, $t, $t);
+            }
+        }
+
+        // Count Query
+        $countSql = "SELECT COUNT(*) as total FROM productos $whereSql";
+        $countStmt = $db->prepare($countSql);
+        $countStmt->execute($params);
+        $totalItems = (int)$countStmt->fetchColumn();
+        $totalPages = ceil($totalItems / $limit);
+
+        // Data Query
         $sql = "SELECT *, 
                 CASE 
                     WHEN stock < stock_low THEN 'red'
@@ -54,30 +83,15 @@ $app->get('/api/products', function (Request $request, Response $response) {
                     ELSE 'green'
                 END as stock_status, imagen
                 FROM productos 
-                WHERE vigente = 1";
-
-        if ($filter === 'offers') {
-            $sql .= " AND precio_oferta > 0";
-        }
-        elseif ($filter === 'news') {
-            $sql .= " AND fecha_agregado > DATE_SUB(NOW(), INTERVAL 2 MONTH)";
-        }
-
-        if (!empty($search)) {
-            $terms = array_slice(explode(' ', $search), 0, 5);
-            foreach ($terms as $i => $term) {
-                $sql .= " AND (codigo LIKE ? OR aplicacion LIKE ? OR marca LIKE ? OR rubro LIKE ? OR info LIKE ?)";
-                $t = "%$term%";
-                array_push($params, $t, $t, $t, $t, $t);
-            }
-        }
+                $whereSql";
 
         if ($filter === 'news') {
             $sql .= " ORDER BY fecha_agregado DESC";
+        } else {
+            $sql .= " ORDER BY marca ASC, codigo ASC";
         }
-        else {
-            $sql .= " LIMIT 100";
-        }
+
+        $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
 
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
@@ -107,7 +121,15 @@ $app->get('/api/products', function (Request $request, Response $response) {
             }
         }
 
-        $response->getBody()->write(json_encode(['data' => $products]));
+        $response->getBody()->write(json_encode([
+            'data' => $products,
+            'pagination' => [
+                'total' => $totalItems,
+                'page' => $page,
+                'limit' => $limit,
+                'totalPages' => $totalPages
+            ]
+        ]));
         return $response->withHeader('Content-Type', 'application/json');
 
     }
