@@ -26,11 +26,13 @@ export const Navbar = () => {
         : role === 'admin'
             ? [
                 { name: 'Catálogo', path: '/' },
+                { name: 'Historial', path: '/price-history' },
                 { name: 'Mis Clientes', path: '/admin/clients' },
                 { name: 'Sistema', path: '/admin/import' },
             ]
             : [
                 { name: 'Catálogo', path: '/' },
+                { name: 'Historial', path: '/price-history' },
                 { name: 'Mis Pedidos', path: '/orders' },
                 { name: 'Contacto', path: '/contact' },
             ];

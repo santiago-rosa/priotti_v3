@@ -290,6 +290,7 @@ async function performUpdate(data) {
                 insert: insertChunks[i] || [],
                 update: updateChunks[i] || [],
                 delete: deleteChunks[i] || [],
+                is_first_batch: i === 0,
                 novelties: data.novelties
             };
             
@@ -334,13 +335,19 @@ function buildUpdateData(currentList, newList) {
         if (currentList[key] != null) {
             // Comparar si hay cambios
             if (JSON.stringify(currentList[key]) != JSON.stringify(newList[key])) {
-                diffList.update.push(buildChangesOnly(currentList[key], newList[key]));
-                if (newList[key].marca) diffList.novelties.push(newList[key].marca);
+                const diff = buildChangesOnly(currentList[key], newList[key]);
+                diffList.update.push(diff);
+                
+                // Solo agregar a novelties si cambió el precio o es oferta
+                if (diff.precio !== undefined || diff.precio_oferta !== undefined) {
+                    if (newList[key].marca) diffList.novelties.push(newList[key].marca);
+                }
             }
             currentList[key].present = true;
         } else {
             // Es nuevo
             diffList.insert.push(newList[key]);
+            // Marcas nuevas también se consideran cambios de precio (de 0 a X)
             if (newList[key].marca) diffList.novelties.push(newList[key].marca);
         }
     });

@@ -12,6 +12,7 @@ import { Contact } from './pages/Contact';
 import { Orders } from './pages/Orders';
 import { AdminClients } from './pages/admin/Clients';
 import { AdminImport } from './pages/admin/Import';
+import { PriceHistory } from './pages/PriceHistory';
 
 const Layout = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-[#0F0F0F] flex flex-col font-sans text-gray-200">
@@ -56,6 +57,7 @@ function App() {
         {/* Client Routes */}
         <Route path="/contact" element={<Layout><Contact /></Layout>} />
         <Route path="/orders" element={<ProtectedRoute allowedRoles="client"><Orders /></ProtectedRoute>} />
+        <Route path="/price-history" element={<ProtectedRoute allowedRoles={['client', 'admin']}><PriceHistory /></ProtectedRoute>} />
 
         {/* Admin Routes */}
         <Route path="/admin/clients" element={<ProtectedRoute allowedRoles="admin"><AdminClients /></ProtectedRoute>} />
