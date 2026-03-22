@@ -88,7 +88,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
         if ($filter === 'news') {
             $sql .= " ORDER BY fecha_agregado DESC";
         } else {
-            $sql .= " ORDER BY codigo ASC";
+            $sql .= " ORDER BY marca ASC, codigo ASC";
         }
 
         $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;

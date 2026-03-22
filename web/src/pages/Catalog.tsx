@@ -31,7 +31,7 @@ export const Catalog = () => {
     const [loading, setLoading] = useState(false);
     const [selectedInfoProduct, setSelectedInfoProduct] = useState<Product | null>(null);
     const [editingProductInfo, setEditingProductInfo] = useState<Product | null>(null);
-    const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'compact'>('compact');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [showMobileControls, setShowMobileControls] = useState(false);
     const [defaultImageProducts, setDefaultImageProducts] = useState<Set<string>>(new Set());
@@ -494,23 +494,36 @@ export const Catalog = () => {
                                     
                                     <div className="flex-grow min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-[15px] font-black text-primary-500 bg-primary-500/10 px-2 py-0.5 rounded tracking-tighter uppercase whitespace-nowrap">
-                                                {product.codigo}
-                                            </span>
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase truncate">
-                                                {product.rubro} • {product.marca}
-                                            </span>
+                                            <div className="flex flex-col min-w-[120px]">
+                                                <span className="text-[15px] font-bold text-primary-500 tracking-widest uppercase leading-none mb-1">
+                                                    {product.codigo}
+                                                </span>
+                                                <span className="text-[15px] font-bold text-gray-400 uppercase truncate">
+                                                    {product.rubro} • {product.marca}
+                                                </span>
+                                            </div>
                                         </div>
                                         <h3 className="text-xs font-bold text-gray-200 truncate group-hover:text-primary-500 transition-colors uppercase tracking-tight">
                                             {displayApp}
                                         </h3>
                                             <div className="flex items-center gap-2 mt-1">
                                                 {product.stock_status && (
-                                                    <div className={`w-2 h-2 rounded-full ${
-                                                        product.stock_status === 'red' ? 'bg-red-500' : 
-                                                        product.stock_status === 'yellow' ? 'bg-yellow-400' : 
-                                                        'bg-green-500'
-                                                    }`} />
+                                                    <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border ${
+                                                        product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                                                        product.stock_status === 'yellow' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 
+                                                        'bg-green-500/10 text-green-500 border-green-500/20'
+                                                    }`}>
+                                                        <div className={`w-1 h-1 rounded-full ${
+                                                            product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
+                                                            product.stock_status === 'yellow' ? 'bg-yellow-500' : 
+                                                            'bg-green-500'
+                                                        }`} />
+                                                        <span>
+                                                            {product.stock_status === 'red' ? 'Sin stock' : 
+                                                             product.stock_status === 'yellow' ? 'Stock limitado' : 
+                                                             'En stock'}
+                                                        </span>
+                                                    </div>
                                                 )}
                                                 {isOffer && (
                                                     <span className="text-[10px] line-through text-gray-600 font-bold">${formatPrice((product.precio_lista * coeficiente) * (1 + (parseFloat(calcValue) || 0) / 100))}</span>
@@ -522,7 +535,7 @@ export const Catalog = () => {
                                                             ${formatPrice(basePrice)}
                                                         </span>
                                                     )}
-                                                    <span className={`text-sm font-black ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
+                                                    <span className={`text-sm font-bold ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
                                                         ${formatPrice(finalPrice)}
                                                     </span>
                                                 </div>
@@ -590,20 +603,34 @@ export const Catalog = () => {
                                     )}
                                 </div>
 
-                                <div className="p-5 flex-grow">
-                                    {/* Tighter grouping for better identification */}
-                                    <div className="flex items-center gap-3 mb-3 bg-black/30 p-2.5 rounded-lg border border-white/5">
-                                        <span className="text-[15px] font-black text-primary-500 bg-primary-500/10 px-3 py-1.5 rounded tracking-widest uppercase">
-                                            {product.codigo}
-                                        </span>
-                                        <span className="text-[11px] font-bold text-gray-300 uppercase tracking-tight truncate">
-                                            {product.rubro} • {product.marca}
-                                        </span>
+                                <div className="p-4 flex-grow flex flex-col">
+                                    {/* Restructured info section to avoid truncation */}
+                                    <div className="space-y-2 mb-3 bg-black/30 p-3 rounded-xl border border-white/5">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Código</span>
+                                            <span className="text-[14px] font-bold text-primary-500 tracking-widest uppercase leading-none">
+                                                {product.codigo}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Rubro</span>
+                                            <span className="text-[13px] font-bold text-gray-200 uppercase leading-snug">
+                                                {product.rubro}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Marca</span>
+                                            <span className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">
+                                                {product.marca}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <h3 className="text-sm font-extrabold text-gray-100 mb-4 leading-snug group-hover:text-primary-500 transition-colors line-clamp-2 min-h-[2.5rem] tracking-tight uppercase">
-                                        {displayApp}
-                                    </h3>
+                                    {displayApp && (
+                                        <h3 className="text-xs font-black text-gray-100 mb-3 leading-snug group-hover:text-primary-500 transition-colors line-clamp-2 tracking-tight uppercase">
+                                            {displayApp}
+                                        </h3>
+                                    )}
                                     
                                     <div className="space-y-2">
                                         <div className="flex gap-2">
@@ -633,25 +660,36 @@ export const Catalog = () => {
                                     </div>
 
                                     {user && (
-                                        <div className="flex items-center space-x-2 mt-3 p-1">
+                                        <div className="flex items-center gap-2 mt-2 p-1">
                                             {product.stock_status && (
-                                                <div className={`w-3 h-3 rounded-full shadow-sm ${
-                                                    product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
-                                                    product.stock_status === 'yellow' ? 'bg-yellow-400' : 
-                                                    'bg-green-500'
-                                                }`} title={`Stock: ${product.stock_status}`} />
+                                                <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border ${
+                                                    product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                                                    product.stock_status === 'yellow' ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' : 
+                                                    'bg-green-500/10 text-green-500 border-green-500/20'
+                                                }`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${
+                                                        product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
+                                                        product.stock_status === 'yellow' ? 'bg-yellow-400' : 
+                                                        'bg-green-500'
+                                                    }`} />
+                                                    <span>
+                                                        {product.stock_status === 'red' ? 'Sin stock' : 
+                                                         product.stock_status === 'yellow' ? 'Stock limitado' : 
+                                                         'En stock'}
+                                                    </span>
+                                                </div>
                                             )}
-                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">
-                                                {role === 'admin' ? `Stock: ${product.stock}` : (product.stock_status ? 'Disponibilidad' : '')}
-                                            </span>
                                             {role === 'admin' && (
-                                                <button 
-                                                    onClick={() => handleUpdateStock(product)}
-                                                    className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-primary-500 transition-colors"
-                                                    title="Editar stock"
-                                                >
-                                                    <Edit2 className="w-3 h-3" />
-                                                </button>
+                                                <div className="flex items-center gap-1 ml-auto">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Stock: {product.stock}</span>
+                                                    <button 
+                                                        onClick={() => handleUpdateStock(product)}
+                                                        className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-primary-500 transition-colors"
+                                                        title="Editar stock"
+                                                    >
+                                                        <Edit2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     )}
@@ -667,8 +705,8 @@ export const Catalog = () => {
                                                     </span>
                                                 )}
                                                 <div className="flex items-baseline">
-                                                    <span className="text-xs font-black text-primary-500/80 mr-1">$</span>
-                                                    <span className={`text-2xl font-black tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
+                                                    <span className="text-xs font-bold text-primary-500/80 mr-1">$</span>
+                                                    <span className={`text-2xl font-bold tracking-tighter ${isOffer ? 'text-red-500' : 'text-primary-500'}`}>
                                                         {formatPrice(finalPrice)}
                                                     </span>
                                                 </div>
