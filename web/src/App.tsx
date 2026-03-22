@@ -15,7 +15,7 @@ import { AdminImport } from './pages/admin/Import';
 import { PriceHistory } from './pages/PriceHistory';
 
 const Layout = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen bg-[#0F0F0F] flex flex-col font-sans text-gray-200">
+  <div className="min-h-screen bg-background flex flex-col font-sans text-text-primary transition-colors duration-300">
     <Navbar />
     <CartDrawer />
     <CartSync />

@@ -72,15 +72,15 @@ export const CartDrawer = () => {
                 onClick={() => setIsOpen(false)}
             />
 
-            <div className="fixed inset-y-0 right-0 max-w-md w-full bg-surface shadow-[0_0_50px_rgba(0,0,0,0.5)] z-50 transform flex flex-col border-l border-white/5 transition-all duration-300">
-                <div className="flex items-center justify-between p-6 border-b border-white/5">
-                    <h2 className="text-xl font-black flex items-center text-white tracking-widest uppercase">
+            <div className="fixed inset-y-0 right-0 max-w-md w-full bg-surface shadow-[0_0_50px_rgba(0,0,0,0.5)] z-50 transform flex flex-col border-l transition-all duration-300">
+                <div className="flex items-center justify-between p-6 border-b">
+                    <h2 className="text-xl font-black flex items-center text-text-primary tracking-widest uppercase">
                         <ShoppingBag className="mr-3 text-primary-500" />
                         Mi Pedido
                     </h2>
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
+                        className="p-2 text-text-secondary hover:text-text-primary hover:bg-muted rounded-xl transition-colors"
                     >
                         <X className="h-6 w-6" />
                     </button>
@@ -94,29 +94,29 @@ export const CartDrawer = () => {
                         </div>
                     ) : (
                         items.map(item => (
-                            <div key={item.codigo} className="flex flex-col border border-white/5 rounded-2xl p-4 shadow-xl bg-surface-light/50 relative group hover:bg-surface-light transition-colors">
+                            <div key={item.codigo} className="flex flex-col border rounded-2xl p-4 shadow-xl bg-surface-light/50 relative group hover:bg-surface-light transition-colors">
                                 <button
                                     onClick={() => removeItem(item.codigo)}
-                                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                                    className="absolute top-2 right-2 text-text-secondary hover:text-red-500"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>
 
-                                <h3 className="font-bold text-sm text-gray-100 pr-6 leading-tight group-hover:text-primary-500 transition-colors uppercase tracking-tight">{item.aplicacion}</h3>
-                                <p className="text-[10px] text-gray-500 mt-1.5 font-bold tracking-widest">REF: {item.codigo} <span className="mx-1 opacity-30">|</span> MARCA: {item.marca}</p>
+                                <h3 className="font-bold text-sm text-text-primary pr-6 leading-tight group-hover:text-primary-500 transition-colors uppercase tracking-tight">{item.aplicacion}</h3>
+                                <p className="text-[10px] text-text-secondary mt-1.5 font-bold tracking-widest">REF: {item.codigo} <span className="mx-1 opacity-30">|</span> MARCA: {item.marca}</p>
 
                                 <div className="flex items-center justify-between mt-4">
-                                    <div className="flex items-center border border-white/5 rounded-xl overflow-hidden bg-surface-darker">
+                                    <div className="flex items-center border rounded-xl overflow-hidden bg-surface-darker">
                                         <button
                                             onClick={() => updateQuantity(item.codigo, Math.max(1, item.cantidad - 1))}
-                                            className="px-3 py-2 hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                                            className="px-3 py-2 hover:bg-muted text-text-secondary hover:text-text-primary transition-colors"
                                         >
                                             <Minus className="h-3 w-3" />
                                         </button>
-                                        <span className="px-4 text-sm font-black text-white w-12 text-center">{item.cantidad}</span>
+                                        <span className="px-4 text-sm font-black text-text-primary w-12 text-center">{item.cantidad}</span>
                                         <button
                                             onClick={() => updateQuantity(item.codigo, item.cantidad + 1)}
-                                            className="px-3 py-2 hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                                            className="px-3 py-2 hover:bg-muted text-text-secondary hover:text-text-primary transition-colors"
                                         >
                                             <Plus className="h-3 w-3" />
                                         </button>
@@ -130,9 +130,9 @@ export const CartDrawer = () => {
                     )}
                 </div>
 
-                <div className="border-t border-white/5 p-6 bg-surface/80 backdrop-blur-md">
+                <div className="border-t p-6 bg-surface/80 backdrop-blur-md">
                     <div className="flex justify-between items-center mb-6">
-                        <span className="text-gray-400 font-bold uppercase tracking-widest text-xs">Total del Pedido</span>
+                        <span className="text-text-secondary font-bold uppercase tracking-widest text-xs">Total del Pedido</span>
                         <span className="text-2xl font-black text-primary-500 tracking-tighter">${formatPrice(total)}</span>
                     </div>
  

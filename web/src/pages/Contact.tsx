@@ -25,16 +25,16 @@ export const Contact = () => {
 
     if (role === 'admin') {
         return (
-            <div className="text-center py-20 text-gray-500 font-medium">
+            <div className="text-center py-20 text-text-secondary font-medium uppercase tracking-widest text-xs">
                 La sección de contacto no está disponible para administradores.
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 text-gray-200 pb-20 max-w-6xl mx-auto">
+        <div className="space-y-8 text-text-primary pb-20 max-w-6xl mx-auto">
             {/* Welcome Banner */}
-            <div className="bg-gradient-to-r from-[#1A1A1A] to-[#262626] rounded-2xl p-10 text-white shadow-2xl relative overflow-hidden border border-white/5">
+            <div className="bg-gradient-to-r from-surface to-surface-light rounded-2xl p-10 text-text-primary shadow-2xl relative overflow-hidden border">
                 <div className="relative z-10">
                     <h1 className="text-4xl font-black mb-3 tracking-tighter">¿Necesitás ayuda?</h1>
                     <p className="text-primary-500 text-xl font-medium">Estamos para asesorarte en lo que necesites.</p>
@@ -49,14 +49,14 @@ export const Contact = () => {
                 <div className="space-y-6">
                     <div className="bg-surface p-8 rounded-2xl shadow-xl border border-white/5">
                         <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest border-b border-white/5 pb-4 text-primary-500">Información de Contacto</h2>
-                        <div className="space-y-8 text-gray-400">
+                        <div className="space-y-8 text-text-secondary">
                             <div className="flex items-start group">
                                 <div className="p-4 bg-white/5 rounded-2xl mr-5 group-hover:bg-primary-500/10 transition-all border border-white/5">
                                     <MapPin className="w-6 h-6 text-primary-500" />
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1.5 pt-1">Ubicación</p>
-                                    <p className="text-gray-400 text-lg">Lavalleja 1430, Cordoba Capital, Cordoba</p>
+                                    <p className="text-text-secondary text-lg">Lavalleja 1430, Cordoba Capital, Cordoba</p>
                                 </div>
                             </div>
                             <div className="flex items-start group">
@@ -65,7 +65,7 @@ export const Contact = () => {
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1.5 pt-1">WhatsApp</p>
-                                    <p className="text-gray-400 text-lg font-mono">+54 351 392-1731</p>
+                                    <p className="text-text-secondary text-lg font-mono">+54 351 392-1731</p>
                                 </div>
                             </div>
                             <div className="flex items-start group">
@@ -74,7 +74,7 @@ export const Contact = () => {
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-200 uppercase text-xs tracking-widest mb-1.5 pt-1">Email Oficial</p>
-                                    <p className="text-gray-400 text-lg text-primary-500">fpriotti@felipepriotti.com.ar</p>
+                                    <p className="text-text-secondary text-lg text-primary-500">fpriotti@felipepriotti.com.ar</p>
                                 </div>
                             </div>
                         </div>
@@ -82,43 +82,43 @@ export const Contact = () => {
                 </div>
 
                 {/* Contact Form */}
-                <div className="bg-surface p-8 rounded-2xl shadow-xl border border-white/5">
-                    <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest border-b border-white/5 pb-4 text-primary-500">Consulta Directa</h2>
+                <div className="bg-surface p-8 rounded-2xl shadow-xl border">
+                    <h2 className="text-xl font-black text-text-primary mb-6 uppercase tracking-widest border-b pb-4 text-primary-500">Consulta Directa</h2>
                     <form onSubmit={handleContactSubmit} className="space-y-6">
                         <div>
-                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2.5">Nombre / Empresa</label>
+                            <label className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-2.5">Nombre / Empresa</label>
                             <input
                                 type="text" required
-                                className="w-full px-4 py-4 bg-[#121212] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
+                                className="w-full px-4 py-4 bg-surface-darker border rounded-xl text-text-primary focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
                                 value={contactForm.name}
                                 onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
                             />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2.5">Teléfono</label>
+                                <label className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-2.5">Teléfono</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-4 bg-[#121212] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
+                                    className="w-full px-4 py-4 bg-surface-darker border rounded-xl text-text-primary focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
                                     value={contactForm.phone}
                                     onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2.5">Email</label>
+                                <label className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-2.5">Email</label>
                                 <input
                                     type="email" required
-                                    className="w-full px-4 py-4 bg-[#121212] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
+                                    className="w-full px-4 py-4 bg-surface-darker border rounded-xl text-text-primary focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
                                     value={contactForm.email}
                                     onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2.5">Mensaje o Detalle</label>
+                            <label className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-2.5">Mensaje o Detalle</label>
                             <textarea
                                 required rows={5}
-                                className="w-full px-4 py-4 bg-[#121212] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all resize-none"
+                                className="w-full px-4 py-4 bg-surface-darker border rounded-xl text-text-primary focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all resize-none"
                                 value={contactForm.message}
                                 onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
                             ></textarea>

@@ -54,21 +54,21 @@ export const PriceHistory = () => {
         <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black text-white tracking-tighter uppercase flex items-center">
+                    <h1 className="text-4xl font-black text-text-primary tracking-tighter uppercase flex items-center">
                         <History className="w-10 h-10 text-primary-500 mr-4" />
                         Historial de Cambios
                     </h1>
-                    <p className="text-gray-500 mt-2 font-medium">Marcas con actualización de precios en las últimas subidas.</p>
+                    <p className="text-text-secondary mt-2 font-medium">Marcas con actualización de precios en las últimas subidas.</p>
                 </div>
 
                 <div className="relative w-full md:w-80 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-primary-500 transition-colors" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary group-focus-within:text-primary-500 transition-colors" />
                     <input
                         type="text"
                         placeholder="Buscar marca o fecha..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-surface-darker border border-white/10 rounded-2xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-600"
+                        className="w-full bg-surface-darker border rounded-2xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-text-secondary/50"
                     />
                 </div>
             </div>
@@ -77,13 +77,13 @@ export const PriceHistory = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-white/5 border-b border-white/5">
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">Fecha de Actualización</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">Marcas Incluidas</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Detalle</th>
+                            <tr className="bg-muted border-b border-white/5">
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary">Fecha de Actualización</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary">Marcas Incluidas</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary text-right">Detalle</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y border-white/5">
                             {filteredHistory.length > 0 ? (
                                 filteredHistory.map((entry) => (
                                     <tr key={entry.id} className="hover:bg-white/[0.02] transition-colors group">
@@ -98,7 +98,7 @@ export const PriceHistory = () => {
                                         <td className="px-8 py-6">
                                             <div className="flex flex-wrap gap-2">
                                                 {entry.cambios.split(', ').slice(0, 8).map((marca, i) => (
-                                                    <span key={i} className="px-2 py-1 bg-white/5 border border-white/5 rounded text-[10px] font-black text-gray-400 uppercase tracking-tighter hover:text-white transition-colors cursor-default">
+                                                    <span key={i} className="px-2 py-1 bg-muted border border-white/5 rounded text-[10px] font-black text-text-secondary uppercase tracking-tighter hover:text-white transition-colors cursor-default">
                                                         {marca}
                                                     </span>
                                                 ))}
@@ -111,7 +111,7 @@ export const PriceHistory = () => {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <div className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 text-gray-500 group-hover:text-primary-500 transition-all group-hover:bg-primary-500/10">
+                                            <div className="inline-flex items-center justify-center p-2 rounded-xl bg-muted text-gray-500 group-hover:text-primary-500 transition-all group-hover:bg-primary-500/10">
                                                 <ChevronRight className="w-5 h-5" />
                                             </div>
                                         </td>
@@ -133,7 +133,7 @@ export const PriceHistory = () => {
                 <Tag className="w-6 h-6 text-primary-500 mt-1" />
                 <div>
                     <h4 className="font-black uppercase text-[10px] tracking-widest text-primary-500 mb-1">Nota importante</h4>
-                    <p className="text-sm text-gray-400 leading-relaxed font-medium">
+                    <p className="text-sm text-text-secondary leading-relaxed font-medium">
                         Esta tabla muestra las marcas que han recibido actualizaciones de precio o stock en la última sincronización masiva. 
                         Si ves una marca en la lista, significa que alguno de sus artículos ha sido impactado por la nueva lista de precios.
                     </p>
