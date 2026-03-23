@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --background: #0B1120; /* Deep Midnight Blue */
-  --surface: #10192A;    /* Deep Blue Surface */
-  --surface-light: #1E293B;
-  --surface-darker: #0B1120;
-  --text-primary: #F3F4F6;
-  --text-secondary: #94A3B8; /* Slate 400 */
-  --border: rgba(56, 189, 248, 0.08); /* Bordes con tinte cian */
-  --muted: rgba(56, 189, 248, 0.05);
-  --primary: #FFB800;
-  --primary-hover: #e6a600;
+  --background: #111111; /* Negro mate profundo (estilo dashboard example) */
+  --surface: #1C1C1C;    /* Gris carbón elevado para items */
+  --surface-light: #282828;
+  --surface-darker: #1C1C1C;
+  --text-primary: #FFFFFF;
+  --text-secondary: #999999;
+  --border: rgba(255, 255, 255, 0.06); /* Bordes sutiles neutros */
+  --muted: rgba(255, 255, 255, 0.04);
+  --primary: #FFB800; /* Priotti Gold exacto */
+  --primary-hover: #E6A600;
 }
 
 .light {
@@ -34,8 +34,8 @@
     color: var(--text-primary);
     @apply font-sans antialiased;
     background-image:
-      radial-gradient(circle at 50% -10%, rgba(56, 189, 248, 0.1) 0%, transparent 60%),
-      radial-gradient(circle at 0% 100%, rgba(56, 189, 248, 0.05) 0%, transparent 40%);
+      radial-gradient(circle at 50% -10%, rgba(255, 184, 0, 0.08) 0%, transparent 60%),
+      radial-gradient(circle at 0% 100%, rgba(255, 184, 0, 0.04) 0%, transparent 40%);
     background-attachment: fixed;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
