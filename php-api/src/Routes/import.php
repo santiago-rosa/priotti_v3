@@ -156,15 +156,7 @@ $app->post('/api/import/bulk-update', function (Request $request, Response $resp
             $stmtDelete->execute([$item['codigo']]);
         }
 
-        // Log the synchronization once (only in the first batch) if there are brands with price changes
-        if (isset($data['is_first_batch']) && $data['is_first_batch'] && !empty($data['novelties'])) {
-            $cambiosList = array_unique($data['novelties']);
-            sort($cambiosList);
-            $cambiosStr = implode(', ', $cambiosList);
-            
-            $stmtLog = $db->prepare("INSERT INTO act_lista (fecha, cambios) VALUES (NOW(), ?)");
-            $stmtLog->execute([$cambiosStr]);
-        }
+        // (El registro en act_lista se hace desde el endpoint /api/import/log-update)
 
         $db->commit();
 
@@ -184,6 +176,33 @@ $app->post('/api/import/bulk-update', function (Request $request, Response $resp
             $db->rollBack();
         }
         $response->getBody()->write(json_encode(['error' => 'Error en la sincronización: ' . $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+$app->post('/api/import/log-update', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+
+    if (empty($data['novelties']) || !is_array($data['novelties'])) {
+        $response->getBody()->write(json_encode(['error' => 'novelties es requerido y debe ser un array']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+
+        $cambiosList = array_unique($data['novelties']);
+        sort($cambiosList);
+        $cambiosStr = implode(', ', $cambiosList);
+
+        $stmt = $db->prepare("INSERT INTO act_lista (fecha, cambios) VALUES (NOW(), ?)");
+        $stmt->execute([$cambiosStr]);
+
+        $response->getBody()->write(json_encode(['message' => 'Historial registrado correctamente']));
+        return $response->withHeader('Content-Type', 'application/json');
+
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => 'Error al registrar historial: ' . $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));
