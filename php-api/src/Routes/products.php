@@ -35,6 +35,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
     $queryParams = $request->getQueryParams();
     $filter = $queryParams['filter'] ?? '';
     $search = $queryParams['search'] ?? '';
+    $marca  = $queryParams['marca'] ?? '';   // optional brand filter (pills)
     $page = isset($queryParams['page']) ? max(1, (int)$queryParams['page']) : 1;
     $limit = isset($queryParams['limit']) ? max(1, (int)$queryParams['limit']) : 30;
     $offset = ($page - 1) * $limit;
@@ -66,6 +67,23 @@ $app->get('/api/products', function (Request $request, Response $response) {
                 $t = "%$term%";
                 array_push($params, $t, $t, $t, $t, $t);
             }
+        }
+
+        // ── Brand pills: fetch distinct brands for the current search ──────────
+        // We do this BEFORE applying the marca filter so the pill list is always
+        // the full set of brands matching the search query.
+        $brands = [];
+        if (!empty($search)) {
+            $brandsSql  = "SELECT DISTINCT marca FROM productos $whereSql AND marca IS NOT NULL AND marca != '' ORDER BY marca ASC";
+            $brandsStmt = $db->prepare($brandsSql);
+            $brandsStmt->execute($params);
+            $brands = $brandsStmt->fetchAll(PDO::FETCH_COLUMN);
+        }
+
+        // Apply brand filter AFTER collecting pills
+        if (!empty($marca)) {
+            $whereSql .= " AND marca = ?";
+            $params[]  = $marca;
         }
 
         // Count Query
@@ -106,7 +124,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
                 $p['stock'] = 0;
                 $p['stock_low'] = 0;
                 $p['stock_medium'] = 0;
-                $p['stock_status'] = null; // Changed from 'green' to null
+                $p['stock_status'] = null;
             }
             else {
                 // If not admin and config is off, hide stock status
@@ -123,6 +141,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
 
         $response->getBody()->write(json_encode([
             'data' => $products,
+            'brands' => $brands,
             'pagination' => [
                 'total' => $totalItems,
                 'page' => $page,
