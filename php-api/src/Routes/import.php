@@ -156,15 +156,20 @@ $app->post('/api/import/bulk-update', function (Request $request, Response $resp
             $stmtDelete->execute([$item['codigo']]);
         }
 
-        // Log the update
-        $cambios = "Inserts: " . count($data['insert']) . ", Updates: " . count($data['update']) . ", Deletes: " . count($data['delete']);
-        $stmtLog = $db->prepare("INSERT INTO act_lista (fecha, cambios) VALUES (NOW(), ?)");
-        $stmtLog->execute([$cambios]);
+        // Log the synchronization once (only in the first batch) if there are brands with price changes
+        if (isset($data['is_first_batch']) && $data['is_first_batch'] && !empty($data['novelties'])) {
+            $cambiosList = array_unique($data['novelties']);
+            sort($cambiosList);
+            $cambiosStr = implode(', ', $cambiosList);
+            
+            $stmtLog = $db->prepare("INSERT INTO act_lista (fecha, cambios) VALUES (NOW(), ?)");
+            $stmtLog->execute([$cambiosStr]);
+        }
 
         $db->commit();
 
         $response->getBody()->write(json_encode([
-            'message' => 'Sincronización completada',
+            'message' => 'Lote procesado con éxito',
             'details' => [
                 'inserted' => count($data['insert']),
                 'updated' => count($data['update']),
@@ -240,3 +245,18 @@ $app->get('/api/admin/statistics', function (Request $request, Response $respons
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));
+
+$app->get('/api/price-history', function (Request $request, Response $response) {
+    try {
+        $db = Database::getConnection();
+        // Get the last 30 updates
+        $stmt = $db->query("SELECT id, fecha, cambios FROM act_lista ORDER BY fecha DESC LIMIT 30");
+        $history = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        $response->getBody()->write(json_encode($history));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => 'Error fetching history: ' . $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+});

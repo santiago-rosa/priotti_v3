@@ -1,13 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
-import { ShoppingCart, LogOut, Menu, X, User } from 'lucide-react';
+import { ShoppingCart, LogOut, Menu, X, User, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
+import { useThemeStore } from '../../store/themeStore';
 import logo from '../../assets/logopriotti.png';
 
 export const Navbar = () => {
     const { user, role, logout } = useAuthStore();
     const { items, setIsOpen } = useCartStore();
+    const { theme, toggleTheme } = useThemeStore();
     const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -26,18 +28,20 @@ export const Navbar = () => {
         : role === 'admin'
             ? [
                 { name: 'Catálogo', path: '/' },
+                { name: 'Historial', path: '/price-history' },
                 { name: 'Mis Clientes', path: '/admin/clients' },
                 { name: 'Sistema', path: '/admin/import' },
             ]
             : [
                 { name: 'Catálogo', path: '/' },
+                { name: 'Historial', path: '/price-history' },
                 { name: 'Mis Pedidos', path: '/orders' },
                 { name: 'Contacto', path: '/contact' },
             ];
 
     return (
-        <nav className="bg-[#0A0A0A] text-white border-b border-white/5 sticky top-0 z-40 backdrop-blur-md bg-opacity-95">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <nav className="bg-background/95 text-text-primary border-b sticky top-0 z-40 backdrop-blur-md transition-colors duration-300">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-none">
                 <div className="flex justify-between h-20">
                     <div className="flex items-center">
                         <Link to="/" className="flex-shrink-0 flex items-center group">
@@ -96,6 +100,14 @@ export const Navbar = () => {
                                 Iniciar Sesión
                             </Link>
                         )}
+
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 ml-2 rounded-xl text-gray-400 hover:text-primary-500 hover:bg-white/5 transition-all border border-transparent hover:border-white/10"
+                            title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                        >
+                            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                        </button>
                     </div>
 
                     {/* Mobile menu button */}
@@ -118,6 +130,12 @@ export const Navbar = () => {
                             className="inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-primary-700"
                         >
                             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 ml-2 text-white"
+                        >
+                            {theme === 'dark' ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
                         </button>
                     </div>
                 </div>

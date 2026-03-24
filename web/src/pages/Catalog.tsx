@@ -282,20 +282,20 @@ export const Catalog = () => {
     };
 
     return (
-        <div className="space-y-6 text-gray-200">
+        <div className="space-y-6 text-text-primary">
             {/* Header and Controls Container */}
-            <div className="bg-surface/80 rounded-2xl shadow-2xl border border-white/5 backdrop-blur-xl sticky top-[80px] z-30 overflow-hidden transition-all duration-300">
+            <div className="bg-surface/80 rounded-2xl shadow-2xl border backdrop-blur-xl sticky top-[80px] z-30 overflow-hidden transition-all duration-300">
                 {/* Always Visible Row: Search and Toggle */}
                 <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6 md:items-center">
                     <div className="flex items-center gap-4 flex-1">
                         {/* Search Bar */}
                         <div className="relative flex-1 group">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Search className="h-4 w-4 text-gray-500 group-focus-within:text-primary-500 transition-colors" />
+                                <Search className="h-4 w-4 text-text-secondary group-focus-within:text-primary-500 transition-colors" />
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-10 pr-4 py-3 bg-surface-darker border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm transition-all text-white placeholder-gray-600 outline-none shadow-inner"
+                                className="block w-full pl-10 pr-4 py-3 bg-surface-darker border rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm transition-all text-text-primary placeholder-text-secondary/50 outline-none shadow-inner"
                                 placeholder="¿Qué estás buscando? (código, marca, rubro...)"
                                 value={search}
                                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -317,14 +317,14 @@ export const Catalog = () => {
                         <div className="flex bg-surface-darker p-1 rounded-xl border border-white/10 shrink-0">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black shadow-lg' : 'text-text-secondary hover:text-white'}`}
                                 title="Vista Cuadrícula"
                             >
                                 <LayoutGrid className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setViewMode('compact')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black shadow-lg' : 'text-text-secondary hover:text-white'}`}
                                 title="Vista Compacta"
                             >
                                 <List className="w-5 h-5" />
@@ -335,21 +335,21 @@ export const Catalog = () => {
 
                 {/* Collapsible Section: Mode (on mobile), Calculator, Filters */}
                 <div className={`${showMobileControls ? 'block' : 'hidden'} md:block transition-all animate-in fade-in slide-in-from-top-1 duration-300`}>
-                    <div className="px-4 pb-6 md:px-6 md:pb-6 border-t md:border-t-0 border-white/5 space-y-4 md:space-y-0 md:flex md:flex-row md:items-center md:gap-4">
+                    <div className="px-4 pb-6 md:px-6 md:pb-6 border-t md:border-t-0 border space-y-4 md:space-y-0 md:flex md:flex-row md:items-center md:gap-4">
                         
                         {/* View Mode (Mobile-only within collapse) */}
-                        <div className="md:hidden flex justify-between items-center py-2 border-b border-white/5">
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Modo de vista:</span>
+                        <div className="md:hidden flex justify-between items-center py-2 border-b border">
+                            <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Modo de vista:</span>
                             <div className="flex bg-surface-darker p-1 rounded-xl border border-white/10 shrink-0">
                                 <button
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black' : 'text-gray-500'}`}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black' : 'text-text-secondary'}`}
                                 >
                                     <LayoutGrid className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => setViewMode('compact')}
-                                    className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black' : 'text-gray-500'}`}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black' : 'text-text-secondary'}`}
                                 >
                                     <List className="w-4 h-4" />
                                 </button>
@@ -358,27 +358,27 @@ export const Catalog = () => {
 
                         {/* Price Calculator */}
                         <div className="relative group/calc w-full md:w-auto">
-                            <div className="flex items-center bg-surface-darker border border-white/10 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary-500/50 transition-all shadow-inner uppercase tracking-widest text-[10px] font-black">
+                            <div className="flex items-center bg-surface-darker border rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary-500/50 transition-all shadow-inner uppercase tracking-widest text-[10px] font-black">
                                 <Calculator className="w-4 h-4 text-primary-500 mr-3 shrink-0" />
-                                <span className="text-gray-500 mr-2 shrink-0">%:</span>
+                                <span className="text-text-secondary mr-2 shrink-0">%:</span>
                                 <input
                                     type="number"
                                     step="0.1"
                                     value={calcValue}
                                     onChange={(e) => setCalcValue(e.target.value)}
-                                    className="flex-1 md:w-14 bg-transparent border-none text-sm font-black text-white focus:ring-0 outline-none text-right placeholder-gray-700"
+                                    className="flex-1 md:w-14 bg-transparent border-none text-sm font-black text-text-primary focus:ring-0 outline-none text-right placeholder-text-secondary/30"
                                     placeholder="0.0"
                                 />
                             </div>
                             {/* Tooltip explicativo */}
-                            <div className="absolute top-full mt-2 left-0 w-64 bg-black/95 border border-white/10 p-4 rounded-2xl text-[10px] font-bold text-gray-400 opacity-0 group-hover/calc:opacity-100 transition-all translate-y-2 group-hover/calc:translate-y-0 pointer-events-none z-50 shadow-2xl backdrop-blur-xl">
+                            <div className="absolute top-full mt-2 left-0 w-64 bg-surface border p-4 rounded-2xl text-[10px] font-bold text-text-secondary opacity-0 group-hover/calc:opacity-100 transition-all translate-y-2 group-hover/calc:translate-y-0 pointer-events-none z-50 shadow-2xl backdrop-blur-xl">
                                 <p className="text-primary-500 uppercase tracking-widest mb-2 flex items-center">
                                     <Info className="w-3.5 h-3.5 mr-2" /> ¿Cómo funciona?
                                 </p>
                                 <p className="mb-2 leading-relaxed">
                                     Aplica un margen de ganancia o descuento temporal a los precios que ves en pantalla.
                                 </p>
-                                <div className="space-y-1 bg-white/5 p-2 rounded-lg border border-white/5">
+                                <div className="space-y-1 bg-surface-darker p-2 rounded-lg border">
                                     <p><span className="text-white font-black">+ :</span> Aumenta precio.</p>
                                     <p><span className="text-white font-black">- :</span> Aplica descuento.</p>
                                 </div>
@@ -399,7 +399,7 @@ export const Catalog = () => {
                                 )}
                                 <button
                                     onClick={() => { setFilter('all'); setPage(1); }}
-                                    className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-lg' : 'bg-white/5 text-gray-400 border border-white/5'}`}
+                                    className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-lg' : 'bg-muted text-text-secondary border border'}`}
                                 >
                                     <Filter className="w-4 h-4 md:mr-2" />
                                     <span className="hidden md:inline">Todos</span>
@@ -435,7 +435,7 @@ export const Catalog = () => {
 
             {/* Grid */}
             {!loading && totalItems > 0 && (
-                <div className="flex justify-between items-center mb-2 text-[10px] font-black text-gray-500 px-2 uppercase tracking-widest">
+                <div className="flex justify-between items-center mb-2 text-[10px] font-black text-text-secondary px-2 uppercase tracking-widest">
                     <span>{totalItems} resultados</span>
                     <span>Pág {page} de {totalPages}</span>
                 </div>
@@ -448,7 +448,7 @@ export const Catalog = () => {
                 <div className="bg-surface p-12 text-center rounded-xl border border-dashed border-white/10">
                     <Search className="mx-auto h-12 w-12 text-gray-700 mb-4" />
                     <h3 className="text-lg font-medium text-gray-300">No se encontraron productos</h3>
-                    <p className="mt-1 text-gray-500">Intente ajustar los términos de búsqueda o filtros.</p>
+                    <p className="mt-1 text-text-secondary">Intente ajustar los términos de búsqueda o filtros.</p>
                 </div>
             ) : (
                 <div className={viewMode === 'grid' 
@@ -463,7 +463,7 @@ export const Catalog = () => {
 
                             if (viewMode === 'compact') {
                                 return (
-                                    <div key={product.codigo} className="bg-surface rounded-xl border border-white/5 hover:border-primary-500/50 transition-all p-3 flex items-center gap-4 group">
+                                    <div key={product.codigo} className="bg-surface rounded-xl border border hover:border-primary-500/50 transition-all p-3 flex items-center gap-4 group">
                                         <div className="w-16 h-16 bg-surface-darker rounded-lg overflow-hidden flex-shrink-0 relative group/img">
                                         <img
                                             src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
@@ -498,12 +498,12 @@ export const Catalog = () => {
                                                 <span className="text-[15px] font-bold text-primary-500 tracking-widest uppercase leading-none mb-1">
                                                     {product.codigo}
                                                 </span>
-                                                <span className="text-[15px] font-bold text-gray-400 uppercase truncate">
+                                                <span className="text-[15px] font-bold text-text-secondary uppercase truncate">
                                                     {product.rubro} • {product.marca}
                                                 </span>
                                             </div>
                                         </div>
-                                        <h3 className="text-xs font-bold text-gray-200 truncate group-hover:text-primary-500 transition-colors uppercase tracking-tight">
+                                        <h3 className="text-xs font-bold text-text-primary truncate group-hover:text-primary-500 transition-colors uppercase tracking-tight">
                                             {displayApp}
                                         </h3>
                                             <div className="flex items-center gap-2 mt-1">
@@ -531,7 +531,7 @@ export const Catalog = () => {
                                                 
                                                 <div className="flex items-baseline gap-2">
                                                     {markup !== 0 && (
-                                                        <span className="text-[10px] font-bold text-gray-500 tabular-nums">
+                                                        <span className="text-[10px] font-bold text-text-secondary tabular-nums">
                                                             ${formatPrice(basePrice)}
                                                         </span>
                                                     )}
@@ -565,7 +565,7 @@ export const Catalog = () => {
                         }
 
                             return (
-                                <div key={product.codigo} className="bg-surface rounded-2xl shadow-xl border border-white/5 hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
+                                <div key={product.codigo} className="bg-surface rounded-2xl shadow-xl border border hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
                                     {user && isOffer && (
                                         <div className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg z-20 shadow-lg flex items-center uppercase tracking-widest">
                                             <Tag className="w-2 h-2 mr-1" /> OFERTA
@@ -604,30 +604,29 @@ export const Catalog = () => {
                                 </div>
 
                                 <div className="p-4 flex-grow flex flex-col">
-                                    {/* Restructured info section to avoid truncation */}
-                                    <div className="space-y-2 mb-3 bg-black/30 p-3 rounded-xl border border-white/5">
+                                    <div className="space-y-2 mb-3 bg-surface-darker/60 p-3 rounded-xl border">
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Código</span>
+                                            <span className="text-[9px] font-black text-text-secondary/50 uppercase tracking-[0.2em]">Código</span>
                                             <span className="text-[14px] font-bold text-primary-500 tracking-widest uppercase leading-none">
                                                 {product.codigo}
                                             </span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Rubro</span>
-                                            <span className="text-[13px] font-bold text-gray-200 uppercase leading-snug">
+                                            <span className="text-[9px] font-black text-text-secondary/50 uppercase tracking-[0.2em]">Rubro</span>
+                                            <span className="text-[13px] font-bold text-text-primary uppercase leading-snug">
                                                 {product.rubro}
                                             </span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-gray-500/50 uppercase tracking-[0.2em]">Marca</span>
-                                            <span className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">
+                                            <span className="text-[9px] font-black text-text-secondary/50 uppercase tracking-[0.2em]">Marca</span>
+                                            <span className="text-[13px] font-bold text-text-secondary uppercase tracking-tight">
                                                 {product.marca}
                                             </span>
                                         </div>
                                     </div>
 
                                     {displayApp && (
-                                        <h3 className="text-xs font-black text-gray-100 mb-3 leading-snug group-hover:text-primary-500 transition-colors line-clamp-2 tracking-tight uppercase">
+                                        <h3 className="text-xs font-black text-text-primary mb-3 leading-snug group-hover:text-primary-500 transition-colors line-clamp-2 tracking-tight uppercase">
                                             {displayApp}
                                         </h3>
                                     )}
@@ -649,7 +648,7 @@ export const Catalog = () => {
                                                         setEditingProductInfo(product);
                                                         setTempInfo(product.info || '');
                                                     }}
-                                                    className={`py-2.5 px-3 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg border border-white/5 transition-all ${!product.info ? 'w-full flex items-center justify-center space-x-2' : ''}`}
+                                                    className={`py-2.5 px-3 bg-muted hover:bg-white/10 text-text-secondary hover:text-white rounded-lg border border transition-all ${!product.info ? 'w-full flex items-center justify-center space-x-2' : ''}`}
                                                     title="Editar Información"
                                                 >
                                                     <Edit3 className="w-3.5 h-3.5" />
@@ -681,10 +680,10 @@ export const Catalog = () => {
                                             )}
                                             {role === 'admin' && (
                                                 <div className="flex items-center gap-1 ml-auto">
-                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Stock: {product.stock}</span>
+                                                    <span className="text-[10px] font-bold text-text-secondary uppercase">Stock: {product.stock}</span>
                                                     <button 
                                                         onClick={() => handleUpdateStock(product)}
-                                                        className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-primary-500 transition-colors"
+                                                        className="p-1 hover:bg-white/10 rounded text-text-secondary hover:text-primary-500 transition-colors"
                                                         title="Editar stock"
                                                     >
                                                         <Edit2 className="w-3 h-3" />
@@ -700,7 +699,7 @@ export const Catalog = () => {
                                         <div className="flex flex-col">
                                             <div className="flex flex-col">
                                                 {markup !== 0 && (
-                                                    <span className="text-[10px] font-bold text-gray-500 tabular-nums mb-0.5">
+                                                    <span className="text-[10px] font-bold text-text-secondary tabular-nums mb-0.5">
                                                         Original: ${formatPrice(basePrice)}
                                                     </span>
                                                 )}
@@ -735,7 +734,7 @@ export const Catalog = () => {
                     <button
                         onClick={() => { const newPage = Math.max(1, page - 1); setPage(newPage); fetchProducts(true, newPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                         disabled={page === 1}
-                        className="p-2 rounded-xl bg-surface-darker text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-white/5 whitespace-nowrap text-xs font-bold"
+                        className="p-2 rounded-xl bg-surface-darker text-text-secondary hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border whitespace-nowrap text-xs font-bold"
                     >
                         &lt; Anterior
                     </button>
@@ -747,7 +746,7 @@ export const Catalog = () => {
                                     {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-600 px-1">...</span>}
                                     <button
                                         onClick={() => { setPage(p); fetchProducts(true, p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${page === p ? 'bg-primary-500 text-black shadow-lg scale-110' : 'bg-surface-darker text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
+                                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${page === p ? 'bg-primary-500 text-black shadow-lg scale-110' : 'bg-surface-darker text-text-secondary hover:bg-white/10 hover:text-white border border'}`}
                                     >
                                         {p}
                                     </button>
@@ -757,7 +756,7 @@ export const Catalog = () => {
                     <button
                         onClick={() => { const newPage = Math.min(totalPages, page + 1); setPage(newPage); fetchProducts(true, newPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                         disabled={page === totalPages}
-                        className="p-2 rounded-xl bg-surface-darker text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-white/5 whitespace-nowrap text-xs font-bold"
+                        className="p-2 rounded-xl bg-surface-darker text-text-secondary hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border whitespace-nowrap text-xs font-bold"
                     >
                         Siguiente &gt;
                     </button>
@@ -773,7 +772,7 @@ export const Catalog = () => {
                     />
                     <div className="relative bg-surface border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
                         {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-primary-500/20 to-transparent p-6 border-b border-white/5">
+                        <div className="bg-gradient-to-r from-primary-500/20 to-transparent p-6 border-b border">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <div className="text-xs font-black tracking-widest text-primary-500 uppercase mb-1">{selectedInfoProduct.marca}</div>
@@ -784,7 +783,7 @@ export const Catalog = () => {
                                 </div>
                                 <button 
                                     onClick={() => setSelectedInfoProduct(null)}
-                                    className="p-2 hover:bg-white/5 rounded-xl text-gray-500 hover:text-white transition-colors"
+                                    className="p-2 hover:bg-muted rounded-xl text-text-secondary hover:text-white transition-colors"
                                 >
                                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -797,27 +796,27 @@ export const Catalog = () => {
                         <div className="p-8">
                             <div className="space-y-6">
                                 <div>
-                                    <div className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Información Adicional</div>
-                                    <div className="bg-surface-darker p-5 rounded-2xl border border-white/5 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap italic">
+                                    <div className="text-xs font-black text-text-secondary uppercase tracking-widest mb-3">Información Adicional</div>
+                                    <div className="bg-surface-darker p-5 rounded-2xl border border text-gray-300 text-sm leading-relaxed whitespace-pre-wrap italic">
                                         {selectedInfoProduct.info}
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                    <div className="bg-muted p-4 rounded-xl border border">
                                         <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-1">Rubro</div>
-                                        <div className="text-sm font-bold text-gray-200 uppercase">{selectedInfoProduct.rubro}</div>
+                                        <div className="text-sm font-bold text-text-primary uppercase">{selectedInfoProduct.rubro}</div>
                                     </div>
-                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                    <div className="bg-muted p-4 rounded-xl border border">
                                         <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-1">Aplicación</div>
-                                        <div className="text-sm font-bold text-gray-200 uppercase">{selectedInfoProduct.aplicacion?.replace(/=/g, 'IDEM ') || 'N/A'}</div>
+                                        <div className="text-sm font-bold text-text-primary uppercase">{selectedInfoProduct.aplicacion?.replace(/=/g, 'IDEM ') || 'N/A'}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-6 bg-surface-darker border-t border-white/5 flex justify-end">
+                        <div className="p-6 bg-surface-darker border-t border flex justify-end">
                              <button
                                 onClick={() => setSelectedInfoProduct(null)}
                                 className="px-6 py-2.5 bg-primary-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)] active:scale-95"
@@ -837,27 +836,27 @@ export const Catalog = () => {
                         onClick={() => setEditingProductInfo(null)} 
                     />
                     <div className="relative bg-surface border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
-                        <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border-white/5">
+                        <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border">
                             <h3 className="text-xl font-bold text-white tracking-tight flex items-center">
                                 <Edit3 className="w-5 h-5 mr-2 text-blue-400" />
                                 Editar Información
                             </h3>
-                            <p className="text-gray-500 text-xs mt-1 uppercase tracking-widest font-black">Producto: {editingProductInfo.codigo}</p>
+                            <p className="text-text-secondary text-xs mt-1 uppercase tracking-widest font-black">Producto: {editingProductInfo.codigo}</p>
                         </div>
 
                         <div className="p-8">
                             <textarea
                                 value={tempInfo}
                                 onChange={(e) => setTempInfo(e.target.value)}
-                                className="w-full h-48 bg-surface-darker border border-white/10 rounded-2xl p-4 text-gray-200 text-sm focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700 resize-none"
+                                className="w-full h-48 bg-surface-darker border border-white/10 rounded-2xl p-4 text-text-primary text-sm focus:ring-2 focus:ring-primary-500/50 outline-none transition-all placeholder-gray-700 resize-none"
                                 placeholder="Escribe aquí la información técnica o detalles del producto..."
                             />
                         </div>
 
-                        <div className="p-6 bg-surface-darker border-t border-white/5 flex justify-end space-x-3">
+                        <div className="p-6 bg-surface-darker border-t border flex justify-end space-x-3">
                             <button
                                 onClick={() => setEditingProductInfo(null)}
-                                className="px-6 py-2.5 text-gray-500 font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest"
+                                className="px-6 py-2.5 text-text-secondary font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest"
                             >
                                 Cancelar
                             </button>
@@ -880,13 +879,13 @@ export const Catalog = () => {
                     <div className="relative bg-surface border border-white/10 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
 
                         {/* ── Header ───────────────────────────────────────────── */}
-                        <div className="bg-gradient-to-r from-primary-500/20 via-primary-500/5 to-transparent p-6 border-b border-white/5">
+                        <div className="bg-gradient-to-r from-primary-500/20 via-primary-500/5 to-transparent p-6 border-b border">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <div className="text-[10px] font-black tracking-widest text-primary-500 uppercase mb-1 flex items-center gap-2">
                                         <span className="bg-primary-500/10 border border-primary-500/20 px-2 py-0.5 rounded">{uploadingProduct.marca}</span>
                                         <span className="text-gray-600">•</span>
-                                        <span className="text-gray-500">{uploadingProduct.rubro}</span>
+                                        <span className="text-text-secondary">{uploadingProduct.rubro}</span>
                                     </div>
                                     <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                                         <ImagePlus className="w-5 h-5 text-primary-500" />
@@ -899,19 +898,19 @@ export const Catalog = () => {
                                         )}
                                     </p>
                                 </div>
-                                <button onClick={resetUploadModal} className="p-2 hover:bg-white/5 rounded-xl text-gray-500 hover:text-white transition-colors shrink-0">
+                                <button onClick={resetUploadModal} className="p-2 hover:bg-muted rounded-xl text-text-secondary hover:text-white transition-colors shrink-0">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
 
                             {/* ── Tabs ─────────────────────────────────────────── */}
-                            <div className="flex gap-1 mt-5 bg-black/30 p-1 rounded-xl border border-white/5">
+                            <div className="flex gap-1 mt-5 bg-surface-darker/50 p-1 rounded-xl border border">
                                 <button
                                     onClick={() => setUploadTab('web')}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                                         uploadTab === 'web'
                                             ? 'bg-primary-500 text-black shadow-lg'
-                                            : 'text-gray-500 hover:text-white'
+                                            : 'text-text-secondary hover:text-white'
                                     }`}
                                 >
                                     <Globe className="w-3.5 h-3.5" />
@@ -922,7 +921,7 @@ export const Catalog = () => {
                                     className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                                         uploadTab === 'file'
                                             ? 'bg-primary-500 text-black shadow-lg'
-                                            : 'text-gray-500 hover:text-white'
+                                            : 'text-text-secondary hover:text-white'
                                     }`}
                                 >
                                     <Upload className="w-3.5 h-3.5" />
@@ -942,19 +941,19 @@ export const Catalog = () => {
                                         href={googleImagesUrl(uploadingProduct)}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-3 w-full py-3 px-4 bg-white/5 hover:bg-primary-500/10 border border-white/5 hover:border-primary-500/30 rounded-xl transition-all group/link"
+                                        className="flex items-center justify-center gap-3 w-full py-3 px-4 bg-muted hover:bg-primary-500/10 border border hover:border-primary-500/30 rounded-xl transition-all group/link"
                                     >
                                         <span className="text-lg">🔍</span>
-                                        <span className="text-[10px] font-black text-gray-400 group-hover/link:text-primary-500 uppercase tracking-widest">Google Imágenes</span>
+                                        <span className="text-[10px] font-black text-text-secondary group-hover/link:text-primary-500 uppercase tracking-widest">Google Imágenes</span>
                                         <ExternalLink className="w-3 h-3 text-gray-700 group-hover/link:text-primary-500 transition-colors ml-auto" />
                                     </a>
                                 </div>
 
                                 {/* Divider */}
                                 <div className="flex items-center gap-3">
-                                    <div className="flex-1 h-px bg-white/5" />
+                                    <div className="flex-1 h-px bg-muted" />
                                     <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Luego pegá la URL de la imagen aquí</span>
-                                    <div className="flex-1 h-px bg-white/5" />
+                                    <div className="flex-1 h-px bg-muted" />
                                 </div>
 
                                 {/* URL Input + Preview button */}
@@ -967,20 +966,20 @@ export const Catalog = () => {
                                             onChange={(e) => { setUrlInput(e.target.value); setUrlPreview(null); setUrlPreviewError(false); setUrlSaveSuccess(false); }}
                                             onKeyDown={(e) => e.key === 'Enter' && handlePreviewUrl()}
                                             placeholder="https://ejemplo.com/imagen.jpg"
-                                            className="w-full pl-9 pr-4 py-2.5 bg-surface-darker border border-white/10 rounded-xl text-xs text-gray-200 placeholder-gray-700 focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
+                                            className="w-full pl-9 pr-4 py-2.5 bg-surface-darker border border-white/10 rounded-xl text-xs text-text-primary placeholder-gray-700 focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 outline-none transition-all"
                                         />
                                     </div>
                                     <button
                                         onClick={handlePreviewUrl}
                                         disabled={!urlInput.trim()}
-                                        className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-gray-300 uppercase tracking-widest transition-all disabled:opacity-40 shrink-0"
+                                        className="px-4 py-2.5 bg-muted hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-gray-300 uppercase tracking-widest transition-all disabled:opacity-40 shrink-0"
                                     >
                                         Preview
                                     </button>
                                 </div>
 
                                 {/* URL Image Preview */}
-                                <div className="w-full h-44 bg-surface-darker rounded-2xl border border-white/5 flex items-center justify-center overflow-hidden relative">
+                                <div className="w-full h-44 bg-surface-darker rounded-2xl border border flex items-center justify-center overflow-hidden relative">
                                     {urlSaveSuccess ? (
                                         <div className="flex flex-col items-center gap-2">
                                             <CheckCircle className="w-12 h-12 text-green-400" />
@@ -1015,7 +1014,7 @@ export const Catalog = () => {
 
                                 {/* Footer */}
                                 <div className="flex justify-end gap-3 pt-1">
-                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-gray-500 font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">
+                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-text-secondary font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">
                                         Cancelar
                                     </button>
                                     <button
@@ -1055,7 +1054,7 @@ export const Catalog = () => {
                                 </div>
 
                                 {/* File picker */}
-                                <label className="flex items-center justify-center gap-3 w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl cursor-pointer transition-all group/label">
+                                <label className="flex items-center justify-center gap-3 w-full py-3 px-4 bg-muted hover:bg-white/10 border border-white/10 rounded-xl cursor-pointer transition-all group/label">
                                     <Upload className="w-4 h-4 text-primary-500 group-hover/label:scale-110 transition-transform" />
                                     <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">
                                         {uploadFile ? uploadFile.name : 'Elegir imagen del equipo...'}
@@ -1071,7 +1070,7 @@ export const Catalog = () => {
 
                                 {/* Footer */}
                                 <div className="flex justify-end gap-3">
-                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-gray-500 font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">
+                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-text-secondary font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">
                                         Cancelar
                                     </button>
                                     <button
