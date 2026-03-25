@@ -42,6 +42,16 @@ async function main() {
         if (isAuto) {
             newFileName = allFiles[0];
             actualFileName = allFiles[1];
+            
+            // Verificar si este Excel ya fue procesado anteriormente
+            const ultimoProcesado = getLastProcessedFile();
+            if (newFileName === ultimoProcesado) {
+                console.log(chalk.gray(`Sin archivos nuevos. '${newFileName}' ya fue procesado.`));
+                console.log(chalk.gray('Programa finalizado (sin cambios).'));
+                logExecution('skip', `Sin archivos nuevos. Último procesado: ${newFileName}`, { inserted: 0, updated: 0, deleted: 0 });
+                return;
+            }
+            
             console.log(chalk.yellow('Modo AUTOMÁTICO activado. Seleccionando archivos automáticamente...'));
         } else {
             // Selección de archivos
@@ -85,7 +95,7 @@ async function main() {
         if (isAuto) {
             showSummary(diffData);
             console.log(chalk.blue('Actualizando automáticamente por ejecución desatendida...'));
-            await performUpdate(diffData);
+            await performUpdate(diffData, newFileName);
             console.log(chalk.gray('Programa finalizado (Modo Auto).'));
             return;
         }
@@ -137,9 +147,20 @@ async function main() {
     }
 }
 
-function logExecution(status, message, details) {
+function getLastProcessedFile() {
     const logPath = './registro.json';
-    let data = { last_execution: "", last_status: "", history: [] };
+    try {
+        if (fs.existsSync(logPath)) {
+            const data = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+            return data.last_file || '';
+        }
+    } catch (e) {}
+    return '';
+}
+
+function logExecution(status, message, details, fileName = '') {
+    const logPath = './registro.json';
+    let data = { last_execution: "", last_status: "", last_file: "", history: [] };
     
     try {
         if (fs.existsSync(logPath)) {
@@ -147,7 +168,7 @@ function logExecution(status, message, details) {
             data = JSON.parse(fileContent);
         }
     } catch (e) {
-        data = { last_execution: "", last_status: "", history: [] };
+        data = { last_execution: "", last_status: "", last_file: "", history: [] };
     }
 
     if (!Array.isArray(data.history)) {
@@ -157,6 +178,11 @@ function logExecution(status, message, details) {
     const timestamp = new Date().toLocaleString();
     data.last_execution = timestamp;
     data.last_status = status;
+
+    // Guardar el archivo procesado solo si fue exitoso
+    if (status === 'success' && fileName) {
+        data.last_file = fileName;
+    }
 
     const newLog = {
         timestamp: timestamp,
@@ -251,7 +277,7 @@ async function confirmUpdate(data) {
     return confirm;
 }
 
-async function performUpdate(data) {
+async function performUpdate(data, fileName = '') {
     try {
         console.log(chalk.blue('\n1. Autenticando con el servidor...'));
         const loginRes = await axios.post(`${API_URL}/auth/login`, {
@@ -289,9 +315,7 @@ async function performUpdate(data) {
             const batchData = {
                 insert: insertChunks[i] || [],
                 update: updateChunks[i] || [],
-                delete: deleteChunks[i] || [],
-                is_first_batch: i === 0,
-                novelties: data.novelties
+                delete: deleteChunks[i] || []
             };
             
             console.log(chalk.gray(`   => Enviando lote ${i + 1} de ${effectiveBatches}...`));
@@ -307,8 +331,21 @@ async function performUpdate(data) {
             }
         }
 
+        // 3. Registrar en act_lista si hubo marcas con cambios de precio
+        if (data.novelties.length > 0) {
+            console.log(chalk.blue('3. Registrando historial de precios...'));
+            await axios.post(`${API_URL}/import/log-update`, {
+                novelties: data.novelties
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            console.log(chalk.green(`✔ Historial guardado (${data.novelties.length} marcas afectadas).`));
+        } else {
+            console.log(chalk.gray('3. Sin cambios de precio, no se registra historial.'));
+        }
+
         console.log(chalk.bold.green('\n✅ SINCRONIZACIÓN COMPLETADA CON ÉXITO'));
-        logExecution('success', 'Sincronización masiva con éxito', allDetails);
+        logExecution('success', 'Sincronización masiva con éxito', allDetails, fileName);
         console.log(chalk.gray('Registro guardado en registro.json\n'));
     } catch (err) {
         let msg = '';

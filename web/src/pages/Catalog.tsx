@@ -25,6 +25,8 @@ export const Catalog = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'offers' | 'news'>('all');
+    const [brandFilter, setBrandFilter] = useState('');
+    const [availableBrands, setAvailableBrands] = useState<string[]>([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
@@ -63,6 +65,7 @@ export const Catalog = () => {
             const params = new URLSearchParams();
             if (search) params.append('search', search);
             if (filter !== 'all') params.append('filter', filter);
+            if (brandFilter) params.append('marca', brandFilter);
             params.append('page', (overridePage || page).toString());
             params.append('limit', '30');
 
@@ -72,12 +75,18 @@ export const Catalog = () => {
                 setTotalPages(response.data.pagination.totalPages);
                 setTotalItems(response.data.pagination.total);
             }
+            // Update available brand pills from the API response
+            if (Array.isArray(response.data.brands)) {
+                setAvailableBrands(response.data.brands);
+            } else if (!search) {
+                setAvailableBrands([]);
+            }
         } catch (error) {
             console.error('Error fetching products', error);
         } finally {
             if (showLoader) setLoading(false);
         }
-    }, [search, filter, page]);
+    }, [search, filter, brandFilter, page]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -298,7 +307,7 @@ export const Catalog = () => {
                                 className="block w-full pl-10 pr-4 py-3 bg-surface-darker border rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm transition-all text-text-primary placeholder-text-secondary/50 outline-none shadow-inner"
                                 placeholder="¿Qué estás buscando? (código, marca, rubro...)"
                                 value={search}
-                                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                                onChange={(e) => { setSearch(e.target.value); setBrandFilter(''); setPage(1); }}
                             />
                         </div>
 
@@ -332,6 +341,36 @@ export const Catalog = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Brand Pills – shown only when there are search results with multiple brands */}
+                {search && availableBrands.length > 1 && (
+                    <div className="px-4 pb-3 md:px-6 flex flex-wrap gap-2 items-center animate-in fade-in slide-in-from-top-1 duration-200">
+                        <span className="text-[9px] font-black text-text-secondary uppercase tracking-widest shrink-0 mr-1">Marca:</span>
+                        <button
+                            onClick={() => { setBrandFilter(''); setPage(1); }}
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                brandFilter === ''
+                                    ? 'bg-primary-500 text-black border-primary-500 shadow-md'
+                                    : 'bg-surface-darker text-text-secondary border hover:border-primary-500/50 hover:text-primary-500'
+                            }`}
+                        >
+                            Todas
+                        </button>
+                        {availableBrands.map((brand) => (
+                            <button
+                                key={brand}
+                                onClick={() => { setBrandFilter(brandFilter === brand ? '' : brand); setPage(1); }}
+                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                    brandFilter === brand
+                                        ? 'bg-primary-500 text-black border-primary-500 shadow-md'
+                                        : 'bg-surface-darker text-text-secondary border hover:border-primary-500/50 hover:text-primary-500'
+                                }`}
+                            >
+                                {brand}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Collapsible Section: Mode (on mobile), Calculator, Filters */}
                 <div className={`${showMobileControls ? 'block' : 'hidden'} md:block transition-all animate-in fade-in slide-in-from-top-1 duration-300`}>

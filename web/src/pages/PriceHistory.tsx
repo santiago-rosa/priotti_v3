@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
-import { History, Calendar, Tag, ChevronRight, Search } from 'lucide-react';
+import { History, Calendar, Tag, Search } from 'lucide-react';
 
 interface HistoryEntry {
     id: number;
@@ -8,10 +8,13 @@ interface HistoryEntry {
     cambios: string;
 }
 
+const BRANDS_PREVIEW = 8;
+
 export const PriceHistory = () => {
     const [history, setHistory] = useState<HistoryEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -27,7 +30,7 @@ export const PriceHistory = () => {
         fetchHistory();
     }, []);
 
-    const filteredHistory = history.filter(entry => 
+    const filteredHistory = history.filter(entry =>
         entry.cambios.toLowerCase().includes(searchTerm.toLowerCase()) ||
         new Date(entry.fecha).toLocaleDateString('es-AR').includes(searchTerm)
     );
@@ -39,6 +42,14 @@ export const PriceHistory = () => {
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
+        });
+    };
+
+    const toggleRow = (id: number) => {
+        setExpandedRows(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
         });
     };
 
@@ -78,48 +89,65 @@ export const PriceHistory = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-muted border-b border-white/5">
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary">Fecha de Actualización</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary w-48">Fecha de Actualización</th>
                                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary">Marcas Incluidas</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary text-right">Detalle</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y border-white/5">
                             {filteredHistory.length > 0 ? (
-                                filteredHistory.map((entry) => (
-                                    <tr key={entry.id} className="hover:bg-white/[0.02] transition-colors group">
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-primary-500/10 rounded-lg text-primary-500">
-                                                    <Calendar className="w-4 h-4" />
+                                filteredHistory.map((entry) => {
+                                    const brands = entry.cambios ? entry.cambios.split(', ') : [];
+                                    const isExpanded = expandedRows.has(entry.id);
+                                    const visibleBrands = isExpanded ? brands : brands.slice(0, BRANDS_PREVIEW);
+                                    const hiddenCount = brands.length - BRANDS_PREVIEW;
+
+                                    return (
+                                        <tr key={entry.id} className="hover:bg-white/[0.02] transition-colors">
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-primary-500/10 rounded-lg text-primary-500">
+                                                        <Calendar className="w-4 h-4" />
+                                                    </div>
+                                                    <span className="text-sm font-bold text-gray-200">{formatDate(entry.fecha)}</span>
                                                 </div>
-                                                <span className="text-sm font-bold text-gray-200">{formatDate(entry.fecha)}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex flex-wrap gap-2">
-                                                {entry.cambios.split(', ').slice(0, 8).map((marca, i) => (
-                                                    <span key={i} className="px-2 py-1 bg-muted border border-white/5 rounded text-[10px] font-black text-text-secondary uppercase tracking-tighter hover:text-white transition-colors cursor-default">
-                                                        {marca}
-                                                    </span>
-                                                ))}
-                                                {entry.cambios.split(', ').length > 8 && (
-                                                    <span className="px-2 py-1 bg-primary-500/10 text-primary-500 rounded text-[10px] font-black uppercase">
-                                                        +{entry.cambios.split(', ').length - 8} más
-                                                    </span>
-                                                )}
-                                                {entry.cambios === '' && <span className="text-gray-600 italic text-xs">Sin cambios en marcas</span>}
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="inline-flex items-center justify-center p-2 rounded-xl bg-muted text-gray-500 group-hover:text-primary-500 transition-all group-hover:bg-primary-500/10">
-                                                <ChevronRight className="w-5 h-5" />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-wrap gap-2">
+                                                    {visibleBrands.map((marca, i) => (
+                                                        <span key={i} className="px-2 py-1 bg-muted border border-white/5 rounded text-[10px] font-black text-text-secondary uppercase tracking-tighter hover:text-white transition-colors cursor-default">
+                                                            {marca}
+                                                        </span>
+                                                    ))}
+
+                                                    {brands.length === 0 && (
+                                                        <span className="text-gray-600 italic text-xs">Sin cambios en marcas</span>
+                                                    )}
+
+                                                    {hiddenCount > 0 && !isExpanded && (
+                                                        <button
+                                                            onClick={() => toggleRow(entry.id)}
+                                                            className="px-2 py-1 bg-primary-500/10 text-primary-500 rounded text-[10px] font-black uppercase hover:bg-primary-500/20 transition-colors cursor-pointer"
+                                                        >
+                                                            +{hiddenCount} más
+                                                        </button>
+                                                    )}
+
+                                                    {isExpanded && brands.length > BRANDS_PREVIEW && (
+                                                        <button
+                                                            onClick={() => toggleRow(entry.id)}
+                                                            className="px-2 py-1 bg-white/5 text-text-secondary rounded text-[10px] font-black uppercase hover:bg-white/10 transition-colors cursor-pointer"
+                                                        >
+                                                            Ver menos
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan={3} className="px-8 py-12 text-center text-gray-500 italic">
+                                    <td colSpan={2} className="px-8 py-12 text-center text-gray-500 italic">
                                         No se encontraron registros que coincidan con la búsqueda.
                                     </td>
                                 </tr>
@@ -134,7 +162,7 @@ export const PriceHistory = () => {
                 <div>
                     <h4 className="font-black uppercase text-[10px] tracking-widest text-primary-500 mb-1">Nota importante</h4>
                     <p className="text-sm text-text-secondary leading-relaxed font-medium">
-                        Esta tabla muestra las marcas que han recibido actualizaciones de precio o stock en la última sincronización masiva. 
+                        Esta tabla muestra las marcas que han recibido actualizaciones de precio o stock en la última sincronización masiva.
                         Si ves una marca en la lista, significa que alguno de sus artículos ha sido impactado por la nueva lista de precios.
                     </p>
                 </div>
