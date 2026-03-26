@@ -52,7 +52,9 @@ export const Catalog = () => {
     const [urlSaveSuccess, setUrlSaveSuccess] = useState(false);
 
     const [tempInfo, setTempInfo] = useState('');
-    const [calcValue, setCalcValue] = useState<string>('0');
+    const [calcValue, setCalcValue] = useState<string>(
+        () => localStorage.getItem('priotti-calc-value') ?? '0'
+    );
 
     const { role, user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
@@ -404,7 +406,10 @@ export const Catalog = () => {
                                     type="number"
                                     step="0.1"
                                     value={calcValue}
-                                    onChange={(e) => setCalcValue(e.target.value)}
+                                    onChange={(e) => {
+                                        setCalcValue(e.target.value);
+                                        localStorage.setItem('priotti-calc-value', e.target.value);
+                                    }}
                                     className="flex-1 md:w-14 bg-transparent border-none text-sm font-black text-text-primary focus:ring-0 outline-none text-right placeholder-text-secondary/30"
                                     placeholder="0.0"
                                 />

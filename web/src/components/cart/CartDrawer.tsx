@@ -113,7 +113,23 @@ export const CartDrawer = () => {
                                         >
                                             <Minus className="h-3 w-3" />
                                         </button>
-                                        <span className="px-4 text-sm font-black text-text-primary w-12 text-center">{item.cantidad}</span>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            value={item.cantidad}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                if (!isNaN(val) && val >= 1) updateQuantity(item.codigo, val);
+                                            }}
+                                            onBlur={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                if (isNaN(val) || val < 1) updateQuantity(item.codigo, item.cantidad);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                            }}
+                                            className="w-14 text-center text-sm font-black text-text-primary bg-transparent border-none focus:ring-0 outline-none py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        />
                                         <button
                                             onClick={() => updateQuantity(item.codigo, item.cantidad + 1)}
                                             className="px-3 py-2 hover:bg-muted text-text-secondary hover:text-text-primary transition-colors"
