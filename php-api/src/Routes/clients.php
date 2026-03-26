@@ -32,7 +32,7 @@ $app->get('/api/clients', function (Request $request, Response $response) {
         $total = (int) $countStmt->fetchColumn();
 
         // Get paginated results
-        $sql = "SELECT * FROM clientes" . $where . " ORDER BY nombre ASC LIMIT $limit OFFSET $offset";
+        $sql = "SELECT * FROM clientes" . $where . " ORDER BY fechaUltimoLogin DESC, nombre ASC LIMIT $limit OFFSET $offset";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         $clients = $stmt->fetchAll();

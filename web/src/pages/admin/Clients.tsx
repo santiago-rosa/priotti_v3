@@ -121,13 +121,14 @@ export const AdminClients = () => {
                                 <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Cliente</th>
                                 <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Credenciales</th>
                                 <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Aumento</th>
+                                <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Actividad</th>
                                 <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
                                 <th scope="col" className="relative px-6 py-4"><span className="sr-only">Editar</span></th>
                             </tr>
                         </thead>
                         <tbody className="bg-transparent divide-y divide-white/5">
                             {loading ? (
-                                <tr><td colSpan={5} className="px-6 py-4 text-center text-gray-500">Cargando...</td></tr>
+                                <tr><td colSpan={6} className="px-6 py-4 text-center text-gray-500">Cargando...</td></tr>
                             ) : clients.map(client => (
                                 <tr key={client.id} className="hover:bg-white/5 transition-colors group">
                                     <td className="px-6 py-5">
@@ -149,6 +150,14 @@ export const AdminClients = () => {
                                         <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-black bg-white/5 text-gray-400 border border-white/5">
                                             {client.porcentajeaumento > 0 ? `+${client.porcentajeaumento}` : client.porcentajeaumento}%
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div className="text-[10px] text-white font-black bg-white/5 px-2 py-1 rounded border border-white/10 inline-block mb-1 tabular-nums tracking-widest">
+                                            {client.visitas || 0} Ingresos
+                                        </div>
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">
+                                            {client.fechaUltimoLogin ? new Date(client.fechaUltimoLogin.replace(' ', 'T')).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}) + ' HS' : 'Sin Actividad'}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-5">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${client.estado === 'ACTIVO' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
