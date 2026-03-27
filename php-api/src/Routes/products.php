@@ -170,7 +170,7 @@ $app->put('/api/products/{codigo}', function (Request $request, Response $respon
         $db = Database::getConnection();
 
         // Fetch current values to keep them if not provided
-        $currentStmt = $db->prepare("SELECT precio_oferta, info, stock, stock_low, stock_medium FROM productos WHERE codigo = ?");
+        $currentStmt = $db->prepare("SELECT precio_oferta, oferta_descripcion, info, stock, stock_low, stock_medium FROM productos WHERE codigo = ?");
         $currentStmt->execute([$codigo]);
         $current = $currentStmt->fetch();
 
@@ -180,13 +180,14 @@ $app->put('/api/products/{codigo}', function (Request $request, Response $respon
         }
 
         $precio_oferta = isset($data['precio_oferta']) ? $data['precio_oferta'] : $current['precio_oferta'];
+        $oferta_descripcion = isset($data['oferta_descripcion']) ? $data['oferta_descripcion'] : $current['oferta_descripcion'];
         $info = isset($data['info']) ? $data['info'] : $current['info'];
         $stock = isset($data['stock']) ? $data['stock'] : $current['stock'];
         $stock_low = isset($data['stock_low']) ? $data['stock_low'] : $current['stock_low'];
         $stock_medium = isset($data['stock_medium']) ? $data['stock_medium'] : $current['stock_medium'];
 
-        $stmt = $db->prepare("UPDATE productos SET precio_oferta = ?, info = ?, stock = ?, stock_low = ?, stock_medium = ?, fecha_modif = NOW() WHERE codigo = ?");
-        $stmt->execute([$precio_oferta, $info, $stock, $stock_low, $stock_medium, $codigo]);
+        $stmt = $db->prepare("UPDATE productos SET precio_oferta = ?, oferta_descripcion = ?, info = ?, stock = ?, stock_low = ?, stock_medium = ?, fecha_modif = NOW() WHERE codigo = ?");
+        $stmt->execute([$precio_oferta, $oferta_descripcion, $info, $stock, $stock_low, $stock_medium, $codigo]);
 
         $response->getBody()->write(json_encode([
             'message' => 'Producto actualizado!',
