@@ -84,9 +84,9 @@ export const Catalog = () => {
                 setTotalItems(response.data.pagination.total);
             }
             // Update available brand pills from the API response
-            if (Array.isArray(response.data.brands)) {
+            if (Array.isArray(response.data.brands) && (search || filter === 'offers')) {
                 setAvailableBrands(response.data.brands);
-            } else if (!search) {
+            } else {
                 setAvailableBrands([]);
             }
         } catch (error) {
@@ -404,7 +404,7 @@ export const Catalog = () => {
                 </div>
 
                 {/* Brand Pills – hidden if scrolled */}
-                {!isScrolled && search && availableBrands.length > 1 && (
+                {!isScrolled && (search || filter === 'offers') && availableBrands.length > 1 && (
                     <div className="px-4 pb-3 md:px-6 flex flex-wrap gap-2 items-center animate-in fade-in slide-in-from-top-1 duration-200">
                         <span className="text-[9px] font-black text-text-secondary uppercase tracking-widest shrink-0 mr-1">Marca:</span>
                         <button

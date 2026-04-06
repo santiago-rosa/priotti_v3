@@ -73,7 +73,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
         // We do this BEFORE applying the marca filter so the pill list is always
         // the full set of brands matching the search query.
         $brands = [];
-        if (!empty($search)) {
+        if (!empty($search) || $filter === 'offers') {
             $brandsSql  = "SELECT DISTINCT marca FROM productos $whereSql AND marca IS NOT NULL AND marca != '' ORDER BY marca ASC";
             $brandsStmt = $db->prepare($brandsSql);
             $brandsStmt->execute($params);
