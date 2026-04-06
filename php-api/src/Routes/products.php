@@ -35,9 +35,9 @@ $app->get('/api/products', function (Request $request, Response $response) {
     $queryParams = $request->getQueryParams();
     $filter = $queryParams['filter'] ?? '';
     $search = $queryParams['search'] ?? '';
-    $marca  = $queryParams['marca'] ?? '';   // optional brand filter (pills)
-    $page = isset($queryParams['page']) ? max(1, (int)$queryParams['page']) : 1;
-    $limit = isset($queryParams['limit']) ? max(1, (int)$queryParams['limit']) : 30;
+    $marca = $queryParams['marca'] ?? '';   // optional brand filter (pills)
+    $page = isset($queryParams['page']) ? max(1, (int) $queryParams['page']) : 1;
+    $limit = isset($queryParams['limit']) ? max(1, (int) $queryParams['limit']) : 30;
     $offset = ($page - 1) * $limit;
 
     try {
@@ -49,14 +49,13 @@ $app->get('/api/products', function (Request $request, Response $response) {
         $showStockConfig = $configStmt->fetch();
         $showStockToClients = ($showStockConfig['value'] ?? '1') === '1';
         $isAdmin = ($user && $user->role === 'admin');
-        
+
         $params = [];
         $whereSql = "WHERE vigente = 1";
 
         if ($filter === 'offers') {
             $whereSql .= " AND precio_oferta > 0";
-        }
-        elseif ($filter === 'news') {
+        } elseif ($filter === 'news') {
             $whereSql .= " AND fecha_agregado > DATE_SUB(NOW(), INTERVAL 2 MONTH)";
         }
 
@@ -74,7 +73,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
         // the full set of brands matching the search query.
         $brands = [];
         if (!empty($search) || $filter === 'offers') {
-            $brandsSql  = "SELECT DISTINCT marca FROM productos $whereSql AND marca IS NOT NULL AND marca != '' ORDER BY marca ASC";
+            $brandsSql = "SELECT DISTINCT marca FROM productos $whereSql AND marca IS NOT NULL AND marca != '' ORDER BY marca ASC";
             $brandsStmt = $db->prepare($brandsSql);
             $brandsStmt->execute($params);
             $brands = $brandsStmt->fetchAll(PDO::FETCH_COLUMN);
@@ -83,14 +82,14 @@ $app->get('/api/products', function (Request $request, Response $response) {
         // Apply brand filter AFTER collecting pills
         if (!empty($marca)) {
             $whereSql .= " AND marca = ?";
-            $params[]  = $marca;
+            $params[] = $marca;
         }
 
         // Count Query
         $countSql = "SELECT COUNT(*) as total FROM productos $whereSql";
         $countStmt = $db->prepare($countSql);
         $countStmt->execute($params);
-        $totalItems = (int)$countStmt->fetchColumn();
+        $totalItems = (int) $countStmt->fetchColumn();
         $totalPages = ceil($totalItems / $limit);
 
         // Data Query
@@ -109,7 +108,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
             $sql .= " ORDER BY marca ASC, codigo ASC";
         }
 
-        $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+        $sql .= " LIMIT " . (int) $limit . " OFFSET " . (int) $offset;
 
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
@@ -125,17 +124,16 @@ $app->get('/api/products', function (Request $request, Response $response) {
                 $p['stock_low'] = 0;
                 $p['stock_medium'] = 0;
                 $p['stock_status'] = null;
-            }
-            else {
+            } else {
                 // If not admin and config is off, hide stock status
                 if (!$isAdmin && !$showStockToClients) {
                     $p['stock_status'] = null;
                 }
 
-                $p['precio_lista'] = (float)$p['precio_lista'];
-                $p['precio_oferta'] = (float)$p['precio_oferta'];
-                $p['vigente'] = (int)$p['vigente'];
-                $p['stock'] = (int)($p['stock'] ?? 0);
+                $p['precio_lista'] = (float) $p['precio_lista'];
+                $p['precio_oferta'] = (float) $p['precio_oferta'];
+                $p['vigente'] = (int) $p['vigente'];
+                $p['stock'] = (int) ($p['stock'] ?? 0);
             }
         }
 
@@ -151,14 +149,90 @@ $app->get('/api/products', function (Request $request, Response $response) {
         ]));
         return $response->withHeader('Content-Type', 'application/json');
 
-    }
-    catch (\Exception $e) {
+    } catch (\Exception $e) {
         $response->getBody()->write(json_encode(['error' => 'Error: ' . $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware(null, true));
 
-$app->put('/api/products/{codigo}', function (Request $request, Response $response, $args) {
+$app->get('/api/products/brands', function (Request $request, Response $response) {
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->query("SELECT DISTINCT marca FROM productos WHERE vigente = 1 AND marca IS NOT NULL AND marca != '' ORDER BY marca ASC");
+        $brands = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $response->getBody()->write(json_encode(['data' => $brands]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+$app->put('/api/products/bulk/thresholds', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+    $marca = $data['marca'] ?? '';
+    $stock_low = isset($data['stock_low']) ? (int) $data['stock_low'] : null;
+    $stock_medium = isset($data['stock_medium']) ? (int) $data['stock_medium'] : null;
+
+    if (empty($marca) || $stock_low === null || $stock_medium === null) {
+        $response->getBody()->write(json_encode(['error' => 'Marca y umbrales son requeridos']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("UPDATE productos SET stock_low = ?, stock_medium = ?, fecha_modif = NOW() WHERE marca = ?");
+        $stmt->execute([$stock_low, $stock_medium, $marca]);
+
+        $response->getBody()->write(json_encode(['message' => "Umbrales actualizados para la marca: $marca"]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+$app->post('/api/products/list', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+    $codigos = $data['codigos'] ?? [];
+
+    if (empty($codigos)) {
+        $response->getBody()->write(json_encode(['data' => []]));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+        $placeholders = str_repeat('?,', count($codigos) - 1) . '?';
+        $sql = "SELECT *, 
+                CASE 
+                    WHEN stock < stock_low THEN 'red'
+                    WHEN stock < stock_medium THEN 'yellow'
+                    ELSE 'green'
+                END as stock_status, imagen
+                FROM productos 
+                WHERE codigo IN ($placeholders) AND vigente = 1";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($codigos);
+        $products = $stmt->fetchAll();
+
+        foreach ($products as &$p) {
+            $p['precio_lista'] = (float) $p['precio_lista'];
+            $p['precio_oferta'] = (float) $p['precio_oferta'];
+            $p['stock'] = (int) ($p['stock'] ?? 0);
+        }
+
+        $response->getBody()->write(json_encode(['data' => $products]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware());
+
+$app->put('/api/products/{codigo:.+}', function (Request $request, Response $response, $args) {
     $codigo = $args['codigo'];
     $data = $request->getParsedBody();
     if (isset($data['precio_oferta']) && $data['precio_oferta'] < 0) {
@@ -197,95 +271,16 @@ $app->put('/api/products/{codigo}', function (Request $request, Response $respon
         ]));
         return $response->withHeader('Content-Type', 'application/json');
 
-    }
-    catch (\Exception $e) {
+    } catch (\Exception $e) {
         $response->getBody()->write(json_encode(['error' => 'Error: ' . $e->getMessage()]));
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));
 
-$app->get('/api/products/brands', function (Request $request, Response $response) {
-    try {
-        $db = Database::getConnection();
-        $stmt = $db->query("SELECT DISTINCT marca FROM productos WHERE vigente = 1 AND marca IS NOT NULL AND marca != '' ORDER BY marca ASC");
-        $brands = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        $response->getBody()->write(json_encode(['data' => $brands]));
-        return $response->withHeader('Content-Type', 'application/json');
-    }
-    catch (\Exception $e) {
-        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
-    }
-})->add(new AuthMiddleware('admin'));
-
-$app->put('/api/products/bulk/thresholds', function (Request $request, Response $response) {
-    $data = $request->getParsedBody();
-    $marca = $data['marca'] ?? '';
-    $stock_low = isset($data['stock_low']) ? (int)$data['stock_low'] : null;
-    $stock_medium = isset($data['stock_medium']) ? (int)$data['stock_medium'] : null;
-
-    if (empty($marca) || $stock_low === null || $stock_medium === null) {
-        $response->getBody()->write(json_encode(['error' => 'Marca y umbrales son requeridos']));
-        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-    }
-
-    try {
-        $db = Database::getConnection();
-        $stmt = $db->prepare("UPDATE productos SET stock_low = ?, stock_medium = ?, fecha_modif = NOW() WHERE marca = ?");
-        $stmt->execute([$stock_low, $stock_medium, $marca]);
-
-        $response->getBody()->write(json_encode(['message' => "Umbrales actualizados para la marca: $marca"]));
-        return $response->withHeader('Content-Type', 'application/json');
-    }
-    catch (\Exception $e) {
-        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
-    }
-})->add(new AuthMiddleware('admin'));
-
-$app->post('/api/products/list', function (Request $request, Response $response) {
-    $data = $request->getParsedBody();
-    $codigos = $data['codigos'] ?? [];
-
-    if (empty($codigos)) {
-        $response->getBody()->write(json_encode(['data' => []]));
-        return $response->withHeader('Content-Type', 'application/json');
-    }
-
-    try {
-        $db = Database::getConnection();
-        $placeholders = str_repeat('?,', count($codigos) - 1) . '?';
-        $sql = "SELECT *, 
-                CASE 
-                    WHEN stock < stock_low THEN 'red'
-                    WHEN stock < stock_medium THEN 'yellow'
-                    ELSE 'green'
-                END as stock_status, imagen
-                FROM productos 
-                WHERE codigo IN ($placeholders) AND vigente = 1";
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute($codigos);
-        $products = $stmt->fetchAll();
-
-        foreach ($products as &$p) {
-            $p['precio_lista'] = (float)$p['precio_lista'];
-            $p['precio_oferta'] = (float)$p['precio_oferta'];
-            $p['stock'] = (int)($p['stock'] ?? 0);
-        }
-
-        $response->getBody()->write(json_encode(['data' => $products]));
-        return $response->withHeader('Content-Type', 'application/json');
-    }
-    catch (\Exception $e) {
-        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
-    }
-})->add(new AuthMiddleware());
+// Reordered static routes to top
 
 // Upload image for a product (admin only)
-$app->post('/api/products/{codigo}/image', function (Request $request, Response $response, $args) {
+$app->post('/api/products/{codigo:.+}/image', function (Request $request, Response $response, $args) {
     $codigo = $args['codigo'];
     $uploadedFiles = $request->getUploadedFiles();
 
@@ -342,9 +337,9 @@ $app->post('/api/products/{codigo}/image', function (Request $request, Response 
         // Determine extension from uploaded file
         $extMap = [
             'image/jpeg' => 'jpg',
-            'image/png'  => 'png',
+            'image/png' => 'png',
             'image/webp' => 'webp',
-            'image/gif'  => 'gif',
+            'image/gif' => 'gif',
         ];
         $ext = $extMap[$clientMime] ?? 'jpg';
 
@@ -362,7 +357,7 @@ $app->post('/api/products/{codigo}/image', function (Request $request, Response 
         $uploadedFile->moveTo($destPath);
 
         $response->getBody()->write(json_encode([
-            'message'  => 'Imagen subida correctamente',
+            'message' => 'Imagen subida correctamente',
             'filename' => $newFilename
         ]));
         return $response->withHeader('Content-Type', 'application/json');
@@ -374,10 +369,10 @@ $app->post('/api/products/{codigo}/image', function (Request $request, Response 
 })->add(new AuthMiddleware('admin'));
 
 // Fetch and save product image from a remote URL (admin only)
-$app->post('/api/products/{codigo}/image-from-url', function (Request $request, Response $response, $args) {
+$app->post('/api/products/{codigo:.+}/image-from-url', function (Request $request, Response $response, $args) {
     $codigo = $args['codigo'];
-    $data    = $request->getParsedBody();
-    $url     = trim($data['url'] ?? '');
+    $data = $request->getParsedBody();
+    $url = trim($data['url'] ?? '');
 
     if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
         $response->getBody()->write(json_encode(['error' => 'URL inválida o no proporcionada']));
@@ -395,32 +390,33 @@ $app->post('/api/products/{codigo}/image-from-url', function (Request $request, 
         // ── Download the Image ────────────────────────────────────────────────
         // Build a Referer from the URL's own origin so CDN hotlink checks pass
         $urlParts = parse_url($url);
-        $referer  = ($urlParts['scheme'] ?? 'https') . '://' . ($urlParts['host'] ?? '');
+        $referer = ($urlParts['scheme'] ?? 'https') . '://' . ($urlParts['host'] ?? '');
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS      => 8,
-            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_MAXREDIRS => 8,
+            CURLOPT_TIMEOUT => 20,
             CURLOPT_CONNECTTIMEOUT => 8,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            CURLOPT_HTTPHEADER     => [
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            CURLOPT_HTTPHEADER => [
                 'Accept: image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
                 'Accept-Language: es-AR,es;q=0.9,en;q=0.8',
                 'Referer: ' . $referer . '/',
             ],
         ]);
 
-        $imageData   = curl_exec($ch);
+        $imageData = curl_exec($ch);
         $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-        $httpCode    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $finalUrl    = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
-        $curlError   = curl_error($ch);
-        $curlErrNo   = curl_errno($ch);
-        curl_close($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        $curlError = curl_error($ch);
+        $curlErrNo = curl_errno($ch);
+        // curl_close is no-op since PHP 8.0 and deprecated since 8.5
+
 
         if ($curlErrNo || $imageData === false) {
             $response->getBody()->write(json_encode(['error' => "Error de red al descargar la imagen (cURL $curlErrNo): $curlError"]));
@@ -440,10 +436,10 @@ $app->post('/api/products/{codigo}/image-from-url', function (Request $request, 
         // ── Validate MIME via content-type header AND magic bytes ─────────────
         $mimeMap = [
             'image/jpeg' => 'jpg',
-            'image/jpg'  => 'jpg',
-            'image/png'  => 'png',
+            'image/jpg' => 'jpg',
+            'image/png' => 'png',
             'image/webp' => 'webp',
-            'image/gif'  => 'gif',
+            'image/gif' => 'gif',
         ];
 
         // Strip charset suffix like "image/jpeg; charset=…"
@@ -453,12 +449,20 @@ $app->post('/api/products/{codigo}/image-from-url', function (Request $request, 
         $magicMime = null;
         if (strlen($imageData) >= 4) {
             $header = substr($imageData, 0, 12);
-            if (substr($header, 0, 3) === "\xFF\xD8\xFF")         $magicMime = 'image/jpeg';
-            elseif (substr($header, 0, 8) === "\x89PNG\r\n\x1A\n") $magicMime = 'image/png';
-            elseif (substr($header, 0, 4) === 'RIFF' &&
-                    substr($header, 8, 4) === 'WEBP')               $magicMime = 'image/webp';
-            elseif (substr($header, 0, 6) === 'GIF87a' ||
-                    substr($header, 0, 6) === 'GIF89a')             $magicMime = 'image/gif';
+            if (substr($header, 0, 3) === "\xFF\xD8\xFF")
+                $magicMime = 'image/jpeg';
+            elseif (substr($header, 0, 8) === "\x89PNG\r\n\x1A\n")
+                $magicMime = 'image/png';
+            elseif (
+                substr($header, 0, 4) === 'RIFF' &&
+                substr($header, 8, 4) === 'WEBP'
+            )
+                $magicMime = 'image/webp';
+            elseif (
+                substr($header, 0, 6) === 'GIF87a' ||
+                substr($header, 0, 6) === 'GIF89a'
+            )
+                $magicMime = 'image/gif';
         }
 
         $resolvedMime = isset($mimeMap[$baseMime]) ? $baseMime : ($magicMime ?? null);
@@ -470,7 +474,7 @@ $app->post('/api/products/{codigo}/image-from-url', function (Request $request, 
         $ext = $mimeMap[$resolvedMime];
 
         // ── Resolve save path ────────────────────────────────────────────────
-        $db   = Database::getConnection();
+        $db = Database::getConnection();
         $stmt = $db->prepare("SELECT imagen FROM productos WHERE codigo = ?");
         $stmt->execute([$codigo]);
         $product = $stmt->fetch();
@@ -492,11 +496,13 @@ $app->post('/api/products/{codigo}/image-from-url', function (Request $request, 
         // Remove existing files with same base name
         $existing = glob(rtrim($basePath, '/') . '/' . $baseFilename . '.*');
         if ($existing) {
-            foreach ($existing as $old) { @unlink($old); }
+            foreach ($existing as $old) {
+                @unlink($old);
+            }
         }
 
         $newFilename = $baseFilename . '.' . $ext;
-        $destPath    = rtrim($basePath, '/') . '/' . $newFilename;
+        $destPath = rtrim($basePath, '/') . '/' . $newFilename;
 
         if (file_put_contents($destPath, $imageData) === false) {
             $response->getBody()->write(json_encode(['error' => 'No se pudo guardar la imagen en el servidor']));
@@ -504,7 +510,7 @@ $app->post('/api/products/{codigo}/image-from-url', function (Request $request, 
         }
 
         $response->getBody()->write(json_encode([
-            'message'  => 'Imagen guardada correctamente desde URL',
+            'message' => 'Imagen guardada correctamente desde URL',
             'filename' => $newFilename,
         ]));
         return $response->withHeader('Content-Type', 'application/json');
@@ -522,8 +528,8 @@ $app->get('/api/products/image/{codigo:.+}', function (Request $request, Respons
 
     // 2. Resolve images directory
     $siteRoot = realpath(__DIR__ . '/../../../') ?: dirname(__DIR__, 3);
-    $basePath  = resolveImagesPath();
-    $filePath  = null;
+    $basePath = resolveImagesPath();
+    $filePath = null;
 
     // 3. Apply transformation rules and search variants
     $transformed = str_replace(['/', ' '], ['-', '_'], $codigo);
@@ -550,7 +556,7 @@ $app->get('/api/products/image/{codigo:.+}', function (Request $request, Respons
         // Use glob to find ANY extension (jpg, png, JPG, etc)
         $pattern = rtrim($basePath, '/') . '/' . $variant . '.*';
         $matches = glob($pattern);
-        
+
         if ($matches && count($matches) > 0) {
             $filePath = $matches[0];
             break;
@@ -585,16 +591,16 @@ $app->get('/api/products/image/{codigo:.+}', function (Request $request, Respons
     // 5. Serve the file
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
     $mimeType = match (strtolower($ext)) {
-            'png' => 'image/png',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'svg' => 'image/svg+xml',
-            default => 'image/jpeg',
-        };
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        'gif' => 'image/gif',
+        'svg' => 'image/svg+xml',
+        default => 'image/jpeg',
+    };
 
     $stream = fopen($filePath, 'rb');
     return $response
-    ->withHeader('Content-Type', $mimeType)
-    ->withHeader('Cache-Control', 'public, max-age=86400')
-    ->withBody(new \Slim\Psr7\Stream($stream));
+        ->withHeader('Content-Type', $mimeType)
+        ->withHeader('Cache-Control', 'public, max-age=86400')
+        ->withBody(new \Slim\Psr7\Stream($stream));
 });
