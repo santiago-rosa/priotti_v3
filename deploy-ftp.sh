@@ -1,23 +1,31 @@
 #!/bin/bash
 
 # ==========================================
-# Configuración de Entornos
+# Cargar Configuración desde .env
 # ==========================================
+if [ -f php-api/.env ]; then
+    export $(grep -v '^#' php-api/.env | xargs)
+else
+    echo "❌ Error: No se encontró el archivo php-api/.env"
+    exit 1
+fi
 
+# Evaluar el parámetro pasado al comando para decidir el entorno
 if [ "$1" == "live" ]; then
     echo "⚙️  Entorno: PRODUCCIÓN (LIVE)"
-    FTP_HOST="ftp.felipepriotti.com.ar"
-    FTP_USER="tu_usuario_ftp_produccion"
-    FTP_PASS="tu_contraseña_ftp_produccion"
+    FTP_HOST=$FTP_LIVE_HOST
+    FTP_USER=$FTP_LIVE_USER
+    FTP_PASS=$FTP_LIVE_PASS
     
+    # Ajusta estas rutas a la ubicación real de producción.
     REMOTE_DIR="/"
-    WEB_URL="https://felipepriotti.com.ar" # Ajustar a la URL pública final
+    WEB_URL="https://felipepriotti.com.ar"
     
 elif [ "$1" == "staging" ]; then
     echo "⚙️  Entorno: PRUEBAS (STAGING)"
-    FTP_HOST="ftp.felipepriotti.com.ar"
-    FTP_USER="felipeprtest@felipepriotti.test.com.ar.felipepriotti.com.ar"
-    FTP_PASS="mariorosa1430"
+    FTP_HOST=$FTP_STAGING_HOST
+    FTP_USER=$FTP_STAGING_USER
+    FTP_PASS=$FTP_STAGING_PASS
     
     # La carpeta donde queremos que aterricen los zips y el extractor
     REMOTE_DIR="/santiagorrosa"
