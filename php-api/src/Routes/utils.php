@@ -41,7 +41,7 @@ $app->get('/api/utils/export', function (Request $request, Response $response) {
             $precio_lista = floatval($p['precio_lista'] ?? 0);
             $precio_oferta = floatval($p['precio_oferta'] ?? 0);
 
-            $finalPrice = ($precio_oferta > 0) ? $precio_oferta : ($precio_lista * $coeficiente);
+            $finalPrice = $precio_lista * $coeficiente;
 
             $sheet->setCellValue('A' . $row, $p['codigo']);
             $sheet->setCellValue('B' . $row, $p['marca']);
