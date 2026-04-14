@@ -65,7 +65,8 @@ export const Catalog = () => {
     const { role, user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
 
-    const coeficiente = user?.coeficiente || 1;
+    // coeficiente is now applied by the backend API to prevent exposing base list prices
+    const coeficiente = 1;
 
     const fetchProducts = useCallback(async (showLoader = false, overridePage?: number) => {
         if (showLoader) setLoading(true);

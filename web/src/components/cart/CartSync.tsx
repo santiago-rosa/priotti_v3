@@ -25,7 +25,8 @@ export const CartSync = () => {
                     const productsRes = await api.post('/products/list', { codigos });
                     const products = productsRes.data.data;
 
-                    const coeficiente = user.coeficiente || 1;
+                    // coeficiente is now applied by the backend API
+                    const coeficiente = 1;
                     
                     const hydratedItems: CartItem[] = dbItems.map((dbItem: any) => {
                         const p = products.find((prod: any) => prod.codigo === dbItem.codigo);

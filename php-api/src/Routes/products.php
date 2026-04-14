@@ -114,7 +114,20 @@ $app->get('/api/products', function (Request $request, Response $response) {
         $stmt->execute($params);
         $products = $stmt->fetchAll();
 
-        // Convert types and sanitize for guest users
+        $coeficiente = 1.0;
+        if ($user) {
+            $porcentaje = 0.0;
+            if (isset($user->up_p)) {
+                $porcentaje = (float) $user->up_p;
+            } else {
+                // Fallback for older tokens or if JWT key is missing: fetch from DB
+                $pStmt = $db->prepare("SELECT porcentajeaumento FROM clientes WHERE id = ? LIMIT 1");
+                $pStmt->execute([$user->id]);
+                $porcentaje = (float) ($pStmt->fetchColumn() ?: 0);
+            }
+            $coeficiente = 1.0 + ($porcentaje / 100.0);
+        }
+
         foreach ($products as &$p) {
             if (!$user) {
                 // Mask sensitive info for non-logged in users
@@ -130,7 +143,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
                     $p['stock_status'] = null;
                 }
 
-                $p['precio_lista'] = (float) $p['precio_lista'];
+                $p['precio_lista'] = (float) $p['precio_lista'] * $coeficiente;
                 $p['precio_oferta'] = (float) $p['precio_oferta'];
                 $p['vigente'] = (int) $p['vigente'];
                 $p['stock'] = (int) ($p['stock'] ?? 0);
@@ -218,8 +231,22 @@ $app->post('/api/products/list', function (Request $request, Response $response)
         $stmt->execute($codigos);
         $products = $stmt->fetchAll();
 
+        $user = $request->getAttribute('user');
+        $coeficiente = 1.0;
+        if ($user) {
+            $porcentaje = 0.0;
+            if (isset($user->up_p)) {
+                $porcentaje = (float) $user->up_p;
+            } else {
+                $pStmt = $db->prepare("SELECT porcentajeaumento FROM clientes WHERE id = ? LIMIT 1");
+                $pStmt->execute([$user->id]);
+                $porcentaje = (float) ($pStmt->fetchColumn() ?: 0);
+            }
+            $coeficiente = 1.0 + ($porcentaje / 100.0);
+        }
+
         foreach ($products as &$p) {
-            $p['precio_lista'] = (float) $p['precio_lista'];
+            $p['precio_lista'] = (float) $p['precio_lista'] * $coeficiente;
             $p['precio_oferta'] = (float) $p['precio_oferta'];
             $p['stock'] = (int) ($p['stock'] ?? 0);
         }

@@ -43,6 +43,7 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
             'id' => (int)$user['id'],
             'numero' => $user['numero'],
             'role' => $userRole,
+            'up_p' => (float)($user['porcentajeaumento'] ?? 0),
             'iat' => time(),
             'exp' => time() + ($minutes * 60)
         ];
@@ -54,8 +55,7 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
             'user' => [
                 'id' => (int)$user['id'],
                 'nombre' => $user['nombre'],
-                'numero' => $user['numero'],
-                'coeficiente' => 1 + ((float)($user['porcentajeaumento'] ?? 0) / 100)
+                'numero' => $user['numero']
             ]
         ]));
 
