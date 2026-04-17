@@ -3,28 +3,39 @@
 @tailwind utilities;
 
 :root {
-  --background: #181c14; /* Exact Forest Black from the image */
-  --surface: #3c3d37;    /* Exact Stone surface */
-  --surface-light: #4e5048;
-  --surface-darker: #111210;
-  --text-primary: #ecdfcc; /* Exact Parchment text */
-  --text-secondary: #697565; /* Exact Sage secondary text */
-  --border: rgba(105, 117, 101, 0.2); 
-  --muted: rgba(105, 117, 101, 0.1);
-  --primary: #ffb800; /* Priotti Gold exacto */
-  --primary-hover: #e6a600;
+  --background: #0a0b0d;
+  /* Ultra-deep Charcoal Black */
+  --surface: #282a3a;
+  /* Charcoal Navy from the palette */
+  --surface-light: #32354a;
+  --surface-darker: #000000;
+  /* Pure Black from the image */
+  --text-primary: #ece2d0;
+  /* Soft parchment for readability */
+  --text-secondary: #ffb800;
+  /* Aged Gold from the palette */
+  --border: rgba(198, 151, 73, 0.15);
+  --muted: rgba(198, 151, 73, 0.08);
+  --primary: #ffb800;
+  /* Classic Brass Gold */
+  --primary-hover: #a67c3a;
 }
 
 .light {
-  --background: #fcfaf5; /* Ultra soft cream background */
+  --background: #fcfaf5;
+  /* Ultra soft cream background */
   --surface: #ffffff;
   --surface-light: #ffffff;
-  --surface-darker: #f5ebd8; /* Champagne tone from the image */
-  --text-primary: #191306; /* Deep mocha/black for warm contrast */
-  --text-secondary: #5a4317; /* Warm earth tone */
+  --surface-darker: #f5ebd8;
+  /* Champagne tone from the image */
+  --text-primary: #191306;
+  /* Deep mocha/black for warm contrast */
+  --text-secondary: #5a4317;
+  /* Warm earth tone */
   --border: rgba(25, 19, 6, 0.08);
   --muted: rgba(25, 19, 6, 0.04);
-  --primary: #d2a652; /* Warm gold from the palette */
+  --primary: #d2a652;
+  /* Warm gold from the palette */
   --primary-hover: #b5872e;
 }
 
@@ -34,8 +45,8 @@
     color: var(--text-primary);
     @apply font-sans antialiased;
     background-image:
-      radial-gradient(circle at 50% -10%, rgba(236, 223, 204, 0.06) 0%, transparent 60%),
-      radial-gradient(circle at 100% 100%, rgba(105, 117, 101, 0.12) 0%, transparent 40%);
+      radial-gradient(circle at 50% -10%, rgba(198, 151, 73, 0.08) 0%, transparent 60%),
+      radial-gradient(circle at 100% 100%, rgba(40, 42, 58, 0.3) 0%, transparent 40%);
     background-attachment: fixed;
     transition: background-color 0.3s ease, color 0.3s ease;
   }

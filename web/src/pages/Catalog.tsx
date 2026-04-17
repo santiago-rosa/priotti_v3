@@ -130,7 +130,7 @@ export const Catalog = () => {
         try {
             const brandsRes = await api.get('/products/brands');
             const brands = brandsRes.data.data;
-            
+
             const brandStr = brands.join(', ');
             const marca = prompt(`Marcas disponibles:\n${brandStr}\n\nIngrese la marca para actualizar en bloque:`);
             if (!marca || !brands.includes(marca)) {
@@ -154,7 +154,7 @@ export const Catalog = () => {
             });
 
             alert(`Umbrales actualizados para ${marca}`);
-            
+
             // Refresh products
             await fetchProducts(false);
         } catch (error) {
@@ -165,23 +165,23 @@ export const Catalog = () => {
 
     const handleUpdateStock = async (product: Product) => {
         const input = prompt(
-            `Actualizar ${product.codigo}:\nStock actual: ${product.stock}\nUmbral Rojo: ${product.stock_low}\nUmbral Amarillo: ${product.stock_medium}\n\nIngrese nuevos valores separados por coma (stock, rojo, amarillo):`, 
+            `Actualizar ${product.codigo}:\nStock actual: ${product.stock}\nUmbral Rojo: ${product.stock_low}\nUmbral Amarillo: ${product.stock_medium}\n\nIngrese nuevos valores separados por coma (stock, rojo, amarillo):`,
             `${product.stock},${product.stock_low},${product.stock_medium}`
         );
-        
+
         if (input === null || input === '') return;
-        
+
         const [newStock, newLow, newMedium] = input.split(',').map(v => parseInt(v.trim()));
-        
+
         if (isNaN(newStock)) return;
 
         try {
-            await api.put(`/products/${product.codigo}`, { 
+            await api.put(`/products/${product.codigo}`, {
                 stock: newStock,
                 stock_low: isNaN(newLow) ? product.stock_low : newLow,
                 stock_medium: isNaN(newMedium) ? product.stock_medium : newMedium
             });
-            
+
             // Refresh to get calculated status from DB
             await fetchProducts(false);
         } catch (error: any) {
@@ -194,12 +194,12 @@ export const Catalog = () => {
     const handleSaveInfo = async () => {
         if (!editingProductInfo) return;
         try {
-            await api.put(`/products/${editingProductInfo.codigo}`, { 
-                info: tempInfo 
+            await api.put(`/products/${editingProductInfo.codigo}`, {
+                info: tempInfo
             });
             alert('Información actualizada');
             setEditingProductInfo(null);
-            
+
             // Refresh products
             await fetchProducts(false);
         } catch (error: any) {
@@ -326,7 +326,7 @@ export const Catalog = () => {
         const price = parseFloat(tempOfferPrice);
         const newPrice = isNaN(price) || tempOfferPrice.trim() === '' ? 0 : Math.max(0, price);
         try {
-            await api.put(`/products/${offerEditProduct.codigo}`, { 
+            await api.put(`/products/${offerEditProduct.codigo}`, {
                 precio_oferta: newPrice,
                 oferta_descripcion: tempOfferDesc
             });
@@ -353,7 +353,7 @@ export const Catalog = () => {
     return (
         <div className="space-y-6 text-text-primary">
             {/* Header and Controls Container */}
-            <div className={`bg-surface/80 rounded-2xl shadow-2xl border backdrop-blur-xl sticky top-[80px] z-30 ${isScrolled ? 'mx-4 py-1.5' : ''}`}>
+            <div className={`bg-surface rounded-2xl shadow-2xl border backdrop-blur-xl sticky top-[80px] z-30 ${isScrolled ? 'mx-4 py-1.5' : ''}`}>
                 {/* Always Visible Row: Search and Toggle */}
                 <div className={`flex flex-col md:flex-row gap-4 px-4 md:px-6 md:items-center ${isScrolled ? 'py-1' : 'py-4 md:py-6'}`}>
                     <div className="flex items-center gap-4 flex-1">
@@ -373,7 +373,7 @@ export const Catalog = () => {
 
                         {/* Expand Button (Mobile Only) - hide if scrolled to keep it clean */}
                         {!isScrolled && (
-                            <button 
+                            <button
                                 onClick={() => setShowMobileControls(!showMobileControls)}
                                 className="md:hidden bg-primary-500 text-black p-3 rounded-xl shadow-lg active:scale-95 shrink-0"
                                 title={showMobileControls ? "Ocultar filtros" : "Más filtros"}
@@ -410,11 +410,10 @@ export const Catalog = () => {
                         <span className="text-[9px] font-black text-text-secondary uppercase tracking-widest shrink-0 mr-1">Marca:</span>
                         <button
                             onClick={() => { setBrandFilter(''); setPage(1); }}
-                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                brandFilter === ''
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${brandFilter === ''
                                     ? 'bg-primary-500 text-black border-primary-500 shadow-md'
                                     : 'bg-surface-darker text-text-secondary border hover:border-primary-500/50 hover:text-primary-500'
-                            }`}
+                                }`}
                         >
                             Todas
                         </button>
@@ -422,11 +421,10 @@ export const Catalog = () => {
                             <button
                                 key={brand}
                                 onClick={() => { setBrandFilter(brandFilter === brand ? '' : brand); setPage(1); }}
-                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                    brandFilter === brand
+                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${brandFilter === brand
                                         ? 'bg-primary-500 text-black border-primary-500 shadow-md'
                                         : 'bg-surface-darker text-text-secondary border hover:border-primary-500/50 hover:text-primary-500'
-                                }`}
+                                    }`}
                             >
                                 {brand}
                             </button>
@@ -438,7 +436,7 @@ export const Catalog = () => {
                 {!isScrolled && (
                     <div className={`${showMobileControls ? 'block' : 'hidden'} md:block transition-all animate-in fade-in slide-in-from-top-1 duration-300`}>
                         <div className="px-4 pb-6 md:px-6 md:pb-6 border-t md:border-t-0 border space-y-4 md:space-y-0 md:flex md:flex-row md:items-center md:gap-4">
-                            
+
                             {/* View Mode (Mobile-only within collapse) */}
                             <div className="md:hidden flex justify-between items-center py-2 border-b border">
                                 <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Modo de vista:</span>
@@ -523,7 +521,7 @@ export const Catalog = () => {
                                         <Clock className="w-4 h-4 md:mr-2" />
                                         <span className="hidden md:inline">Novedades</span>
                                     </button>
-                                    
+
                                     <button
                                         onClick={handleDownloadExcel}
                                         title="Descargar Excel"
@@ -557,26 +555,26 @@ export const Catalog = () => {
                     <p className="mt-1 text-text-secondary">Intente ajustar los términos de búsqueda o filtros.</p>
                 </div>
             ) : (
-                <div className={viewMode === 'grid' 
-                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
+                <div className={viewMode === 'grid'
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     : "space-y-3"}>
-                        {products.map((product) => {
-                            const isOffer = product.precio_oferta > 0;
-                            const isShowingOffer = showOfferCodes.has(product.codigo);
-                            const markup = parseFloat(calcValue) || 0;
-                            
-                            // Normal price with calculator
-                            const normalPrice = (product.precio_lista * coeficiente) * (1 + markup / 100);
-                            // Offer price is FIXED
-                            const offerPrice = product.precio_oferta;
-                            
-                            const finalPrice = isShowingOffer ? offerPrice : normalPrice;
-                            const displayApp = product.aplicacion?.replace(/=/g, 'IDEM ') || '';
+                    {products.map((product) => {
+                        const isOffer = product.precio_oferta > 0;
+                        const isShowingOffer = showOfferCodes.has(product.codigo);
+                        const markup = parseFloat(calcValue) || 0;
 
-                            if (viewMode === 'compact') {
-                                return (
-                                    <div key={product.codigo} className="bg-surface rounded-xl border border hover:border-primary-500/50 transition-all p-3 flex items-center gap-4 group">
-                                        <div className="w-16 h-16 bg-surface-darker rounded-lg overflow-hidden flex-shrink-0 relative group/img">
+                        // Normal price with calculator
+                        const normalPrice = (product.precio_lista * coeficiente) * (1 + markup / 100);
+                        // Offer price is FIXED
+                        const offerPrice = product.precio_oferta;
+
+                        const finalPrice = isShowingOffer ? offerPrice : normalPrice;
+                        const displayApp = product.aplicacion?.replace(/=/g, 'IDEM ') || '';
+
+                        if (viewMode === 'compact') {
+                            return (
+                                <div key={product.codigo} className="bg-surface rounded-xl border border hover:border-primary-500/50 transition-all p-3 flex items-center gap-4 group">
+                                    <div className="w-16 h-16 bg-surface-darker rounded-lg overflow-hidden flex-shrink-0 relative group/img">
                                         <img
                                             src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
                                             alt={product.codigo}
@@ -603,7 +601,7 @@ export const Catalog = () => {
                                             </button>
                                         )}
                                     </div>
-                                    
+
                                     <div className="flex-grow min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                             <div className="flex flex-col min-w-[120px]">
@@ -618,63 +616,60 @@ export const Catalog = () => {
                                         <h3 className="text-xs font-bold text-text-primary truncate group-hover:text-primary-500 transition-colors uppercase tracking-tight">
                                             {displayApp}
                                         </h3>
-                                            {user && (
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    {product.stock_status && (
-                                                        <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border ${
-                                                            product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
-                                                            product.stock_status === 'yellow' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 
-                                                            'bg-green-500/10 text-green-500 border-green-500/20'
+                                        {user && (
+                                            <div className="flex items-center gap-2 mt-1">
+                                                {product.stock_status && (
+                                                    <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border ${product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                                            product.stock_status === 'yellow' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                                                'bg-green-500/10 text-green-500 border-green-500/20'
                                                         }`}>
-                                                            <div className={`w-1 h-1 rounded-full ${
-                                                                product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
-                                                                product.stock_status === 'yellow' ? 'bg-yellow-500' : 
-                                                                'bg-green-500'
+                                                        <div className={`w-1 h-1 rounded-full ${product.stock_status === 'red' ? 'bg-red-500 animate-pulse' :
+                                                                product.stock_status === 'yellow' ? 'bg-yellow-500' :
+                                                                    'bg-green-500'
                                                             }`} />
-                                                            <span>
-                                                                {product.stock_status === 'red' ? 'Sin stock' : 
-                                                                 product.stock_status === 'yellow' ? 'Stock limitado' : 
-                                                                 'En stock'}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {isOffer && (
-                                                        <button 
-                                                            onClick={() => toggleOfferDisplay(product.codigo)}
-                                                            className={`inline-flex items-center gap-1 border text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest transition-all ${
-                                                                isShowingOffer 
-                                                                    ? 'bg-red-500 text-white border-red-500 shadow-md scale-105' 
-                                                                    : 'bg-red-500/15 text-red-500 border-red-500/30 hover:bg-red-500/25'
-                                                            }`}
-                                                            title={isShowingOffer ? "Ver precio normal" : "Ver oferta"}
-                                                        >
-                                                            <Tag className="w-2.5 h-2.5" /> OFERTA
-                                                        </button>
-                                                    )}
-                                                    
-                                                    {isShowingOffer && product.oferta_descripcion && (
-                                                        <span className="text-[10px] text-red-500/70 font-bold italic truncate max-w-[150px]" title={product.oferta_descripcion}>
-                                                            {product.oferta_descripcion}
-                                                        </span>
-                                                    )}
-                                                    
-                                                    <div className="flex items-baseline gap-2">
-                                                        {markup !== 0 && !isShowingOffer && (
-                                                            <span className="text-[10px] font-bold text-text-secondary tabular-nums">
-                                                                ${formatPrice(product.precio_lista * coeficiente)}
-                                                            </span>
-                                                        )}
-                                                        <span className={`text-sm font-bold transition-colors duration-300 ${isShowingOffer ? 'text-red-500 scale-110' : 'text-primary-500'}`}>
-                                                            ${formatPrice(finalPrice)}
+                                                        <span>
+                                                            {product.stock_status === 'red' ? 'Sin stock' :
+                                                                product.stock_status === 'yellow' ? 'Stock limitado' :
+                                                                    'En stock'}
                                                         </span>
                                                     </div>
+                                                )}
+                                                {isOffer && (
+                                                    <button
+                                                        onClick={() => toggleOfferDisplay(product.codigo)}
+                                                        className={`inline-flex items-center gap-1 border text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest transition-all ${isShowingOffer
+                                                                ? 'bg-red-500 text-white border-red-500 shadow-md scale-105'
+                                                                : 'bg-red-500/15 text-red-500 border-red-500/30 hover:bg-red-500/25'
+                                                            }`}
+                                                        title={isShowingOffer ? "Ver precio normal" : "Ver oferta"}
+                                                    >
+                                                        <Tag className="w-2.5 h-2.5" /> OFERTA
+                                                    </button>
+                                                )}
+
+                                                {isShowingOffer && product.oferta_descripcion && (
+                                                    <span className="text-[10px] text-red-500/70 font-bold italic truncate max-w-[150px]" title={product.oferta_descripcion}>
+                                                        {product.oferta_descripcion}
+                                                    </span>
+                                                )}
+
+                                                <div className="flex items-baseline gap-2">
+                                                    {markup !== 0 && !isShowingOffer && (
+                                                        <span className="text-[10px] font-bold text-text-secondary tabular-nums">
+                                                            ${formatPrice(product.precio_lista * coeficiente)}
+                                                        </span>
+                                                    )}
+                                                    <span className={`text-sm font-bold transition-colors duration-300 ${isShowingOffer ? 'text-red-500 scale-110' : 'text-primary-500'}`}>
+                                                        ${formatPrice(finalPrice)}
+                                                    </span>
                                                 </div>
-                                            )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex flex-col gap-2">
                                         {product.info && (
-                                            <button 
+                                            <button
                                                 onClick={() => setSelectedInfoProduct(product)}
                                                 className="p-2 bg-primary-500/10 text-primary-500 rounded-lg hover:bg-primary-500/20 transition-all"
                                             >
@@ -683,8 +678,8 @@ export const Catalog = () => {
                                         )}
                                         {role === 'admin' && (
                                             <button
-                                                onClick={() => { 
-                                                    setOfferEditProduct(product); 
+                                                onClick={() => {
+                                                    setOfferEditProduct(product);
                                                     setTempOfferPrice(product.precio_oferta > 0 ? String(product.precio_oferta) : '');
                                                     setTempOfferDesc(product.oferta_descripcion || '');
                                                 }}
@@ -707,25 +702,24 @@ export const Catalog = () => {
                             );
                         }
 
-                            return (
-                                <div key={product.codigo} className="bg-surface rounded-2xl shadow-xl border border hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
-                                    {user && isOffer && (
-                                        <button 
-                                            onClick={() => toggleOfferDisplay(product.codigo)}
-                                            className="absolute top-3 right-3 z-30"
-                                        >
-                                            <div className={`text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center uppercase tracking-widest transition-all ${
-                                                isShowingOffer 
-                                                    ? 'bg-red-600 text-white border-2 border-white/20' 
-                                                    : 'bg-red-600/80 text-white hover:bg-red-600'
+                        return (
+                            <div key={product.codigo} className="bg-surface rounded-2xl shadow-xl border border hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
+                                {user && isOffer && (
+                                    <button
+                                        onClick={() => toggleOfferDisplay(product.codigo)}
+                                        className="absolute top-3 right-3 z-30"
+                                    >
+                                        <div className={`text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center uppercase tracking-widest transition-all ${isShowingOffer
+                                                ? 'bg-red-600 text-white border-2 border-white/20'
+                                                : 'bg-red-600/80 text-white hover:bg-red-600'
                                             }`}>
-                                                <Tag className="w-2 h-2 mr-1" /> OFERTA {isShowingOffer ? 'ACTIVA' : ''}
-                                            </div>
-                                        </button>
-                                    )}
-                                    
-                                    {/* Product Image Container */}
-                                    <div className="w-full h-48 bg-surface-darker flex items-center justify-center group-hover:bg-surface-light transition-colors relative overflow-hidden group/img">
+                                            <Tag className="w-2 h-2 mr-1" /> OFERTA {isShowingOffer ? 'ACTIVA' : ''}
+                                        </div>
+                                    </button>
+                                )}
+
+                                {/* Product Image Container */}
+                                <div className="w-full h-48 bg-surface-darker flex items-center justify-center group-hover:bg-surface-light transition-colors relative overflow-hidden group/img">
                                     <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                     <img
                                         src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
@@ -782,7 +776,7 @@ export const Catalog = () => {
                                             {displayApp}
                                         </h3>
                                     )}
-                                    
+
                                     <div className="space-y-2">
                                         <div className="flex gap-2">
                                             {product.info && (
@@ -813,27 +807,25 @@ export const Catalog = () => {
                                     {user && (
                                         <div className="flex items-center gap-2 mt-2 p-1">
                                             {product.stock_status && (
-                                                <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border ${
-                                                    product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
-                                                    product.stock_status === 'yellow' ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' : 
-                                                    'bg-green-500/10 text-green-500 border-green-500/20'
-                                                }`}>
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${
-                                                        product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
-                                                        product.stock_status === 'yellow' ? 'bg-yellow-400' : 
-                                                        'bg-green-500'
-                                                    }`} />
+                                                <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border ${product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                                        product.stock_status === 'yellow' ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' :
+                                                            'bg-green-500/10 text-green-500 border-green-500/20'
+                                                    }`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${product.stock_status === 'red' ? 'bg-red-500 animate-pulse' :
+                                                            product.stock_status === 'yellow' ? 'bg-yellow-400' :
+                                                                'bg-green-500'
+                                                        }`} />
                                                     <span>
-                                                        {product.stock_status === 'red' ? 'Sin stock' : 
-                                                         product.stock_status === 'yellow' ? 'Stock limitado' : 
-                                                         'En stock'}
+                                                        {product.stock_status === 'red' ? 'Sin stock' :
+                                                            product.stock_status === 'yellow' ? 'Stock limitado' :
+                                                                'En stock'}
                                                     </span>
                                                 </div>
                                             )}
                                             {role === 'admin' && (
                                                 <div className="flex items-center gap-1 ml-auto">
                                                     <span className="text-[10px] font-bold text-text-secondary uppercase">Stock: {product.stock}</span>
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleUpdateStock(product)}
                                                         className="p-1 hover:bg-white/10 rounded text-text-secondary hover:text-primary-500 transition-colors"
                                                         title="Editar stock"
@@ -857,7 +849,7 @@ export const Catalog = () => {
                                                 )}
                                                 {isShowingOffer && product.oferta_descripcion && (
                                                     <div className="bg-red-500/5 border border-red-500/10 rounded-lg p-2 mb-2 max-w-[200px]">
-                                                         <p className="text-[10px] text-red-400 font-bold italic leading-tight">
+                                                        <p className="text-[10px] text-red-400 font-bold italic leading-tight">
                                                             {product.oferta_descripcion}
                                                         </p>
                                                     </div>
@@ -870,7 +862,7 @@ export const Catalog = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         {role === 'client' && (
                                             <button
                                                 onClick={() => handleAddToCart(product)}
@@ -882,8 +874,8 @@ export const Catalog = () => {
                                         )}
                                         {role === 'admin' && (
                                             <button
-                                                onClick={() => { 
-                                                    setOfferEditProduct(product); 
+                                                onClick={() => {
+                                                    setOfferEditProduct(product);
                                                     setTempOfferPrice(product.precio_oferta > 0 ? String(product.precio_oferta) : '');
                                                     setTempOfferDesc(product.oferta_descripcion || '');
                                                 }}
@@ -938,22 +930,22 @@ export const Catalog = () => {
             {/* Modal de Información de Producto */}
             {selectedInfoProduct && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div 
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
-                        onClick={() => setSelectedInfoProduct(null)} 
+                    <div
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        onClick={() => setSelectedInfoProduct(null)}
                     />
                     <div className="relative bg-surface border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
                         {/* Modal Header */}
                         <div className="bg-gradient-to-r from-primary-500/20 to-transparent p-6 border-b border">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <div className="text-xs font-black tracking-widest text-primary-500 uppercase mb-1">{selectedInfoProduct.marca}</div>
+                                    <div className="text-xs font-black tracking-widest text-primary-500 uppercase mb-1">{selectedInfoProduct.marca} - {selectedInfoProduct.codigo}</div>
                                     <h3 className="text-xl font-bold text-text-primary tracking-tight flex items-center">
                                         <Info className="w-5 h-5 mr-2 text-primary-500" />
                                         Detalles del Producto
                                     </h3>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => setSelectedInfoProduct(null)}
                                     className="p-2 hover:bg-muted rounded-xl text-text-secondary hover:text-text-primary transition-colors"
                                 >
@@ -989,7 +981,7 @@ export const Catalog = () => {
 
                         {/* Modal Footer */}
                         <div className="p-6 bg-surface-darker border-t border flex justify-end">
-                             <button
+                            <button
                                 onClick={() => setSelectedInfoProduct(null)}
                                 className="px-6 py-2.5 bg-primary-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)] active:scale-95"
                             >
@@ -1003,9 +995,9 @@ export const Catalog = () => {
             {/* Modal de Edición de Información (Admin) */}
             {editingProductInfo && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div 
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
-                        onClick={() => setEditingProductInfo(null)} 
+                    <div
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        onClick={() => setEditingProductInfo(null)}
                     />
                     <div className="relative bg-surface border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
                         <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border">
@@ -1079,22 +1071,20 @@ export const Catalog = () => {
                             <div className="flex gap-1 mt-5 bg-surface-darker/50 p-1 rounded-xl border border">
                                 <button
                                     onClick={() => setUploadTab('web')}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                        uploadTab === 'web'
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${uploadTab === 'web'
                                             ? 'bg-primary-500 text-black shadow-lg'
                                             : 'text-text-secondary hover:text-white'
-                                    }`}
+                                        }`}
                                 >
                                     <Globe className="w-3.5 h-3.5" />
                                     Buscar en Internet
                                 </button>
                                 <button
                                     onClick={() => setUploadTab('file')}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                        uploadTab === 'file'
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${uploadTab === 'file'
                                             ? 'bg-primary-500 text-black shadow-lg'
                                             : 'text-text-secondary hover:text-white'
-                                    }`}
+                                        }`}
                                 >
                                     <Upload className="w-3.5 h-3.5" />
                                     Subir Archivo
@@ -1264,24 +1254,24 @@ export const Catalog = () => {
             )}
 
             {selectedImage && (
-                <div 
+                <div
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"
                     onClick={() => setSelectedImage(null)}
                 >
-                    <button 
+                    <button
                         className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all hover:rotate-90 z-[110]"
                         onClick={() => setSelectedImage(null)}
                     >
                         <X className="w-8 h-8" />
                     </button>
-                    
-                    <div 
+
+                    <div
                         className="relative max-w-5xl w-full h-full flex items-center justify-center"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <img 
-                            src={selectedImage} 
-                            alt="Full size" 
+                        <img
+                            src={selectedImage}
+                            alt="Full size"
                             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
                         />
                     </div>
