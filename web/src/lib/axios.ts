@@ -9,9 +9,46 @@ export const api = axios.create({
 });
 
 // Add a request interceptor to inject the JWT
+let isRefreshing = false;
+
 api.interceptors.request.use(
-    (config) => {
-        const token = useAuthStore.getState().token;
+    async (config) => {
+        const { token, updateToken } = useAuthStore.getState();
+        
+        // Sliding session logic: refresh token based on its actual expiration percentage
+        if (token && !config.url?.includes('/auth/refresh') && !isRefreshing) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const payload = JSON.parse(window.atob(base64));
+                
+                const iat = payload.iat * 1000;
+                const exp = payload.exp * 1000;
+                const now = Date.now();
+                
+                // Refresh when 50% of token life has passed
+                const refreshThresholdTime = iat + (exp - iat) * 0.5;
+                
+                if (now > refreshThresholdTime) {
+                    isRefreshing = true;
+                    api.get('/auth/refresh')
+                        .then(res => {
+                            if (res.data.token) {
+                                updateToken(res.data.token);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Failed to refresh token', err);
+                        })
+                        .finally(() => {
+                            isRefreshing = false;
+                        });
+                }
+            } catch (e) {
+                // Ignore decoding errors
+            }
+        }
+
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
         }

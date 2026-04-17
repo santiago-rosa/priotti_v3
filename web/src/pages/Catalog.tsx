@@ -618,56 +618,58 @@ export const Catalog = () => {
                                         <h3 className="text-xs font-bold text-text-primary truncate group-hover:text-primary-500 transition-colors uppercase tracking-tight">
                                             {displayApp}
                                         </h3>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                {product.stock_status && (
-                                                    <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border ${
-                                                        product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
-                                                        product.stock_status === 'yellow' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 
-                                                        'bg-green-500/10 text-green-500 border-green-500/20'
-                                                    }`}>
-                                                        <div className={`w-1 h-1 rounded-full ${
-                                                            product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
-                                                            product.stock_status === 'yellow' ? 'bg-yellow-500' : 
-                                                            'bg-green-500'
-                                                        }`} />
-                                                        <span>
-                                                            {product.stock_status === 'red' ? 'Sin stock' : 
-                                                             product.stock_status === 'yellow' ? 'Stock limitado' : 
-                                                             'En stock'}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {isOffer && (
-                                                    <button 
-                                                        onClick={() => toggleOfferDisplay(product.codigo)}
-                                                        className={`inline-flex items-center gap-1 border text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest transition-all ${
-                                                            isShowingOffer 
-                                                                ? 'bg-red-500 text-white border-red-500 shadow-md scale-105' 
-                                                                : 'bg-red-500/15 text-red-500 border-red-500/30 hover:bg-red-500/25'
-                                                        }`}
-                                                        title={isShowingOffer ? "Ver precio normal" : "Ver oferta"}
-                                                    >
-                                                        <Tag className="w-2.5 h-2.5" /> OFERTA
-                                                    </button>
-                                                )}
-                                                
-                                                {isShowingOffer && product.oferta_descripcion && (
-                                                    <span className="text-[10px] text-red-500/70 font-bold italic truncate max-w-[150px]" title={product.oferta_descripcion}>
-                                                        {product.oferta_descripcion}
-                                                    </span>
-                                                )}
-                                                
-                                                <div className="flex items-baseline gap-2">
-                                                    {markup !== 0 && !isShowingOffer && (
-                                                        <span className="text-[10px] font-bold text-text-secondary tabular-nums">
-                                                            ${formatPrice(product.precio_lista * coeficiente)}
+                                            {user && (
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {product.stock_status && (
+                                                        <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border ${
+                                                            product.stock_status === 'red' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                                                            product.stock_status === 'yellow' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 
+                                                            'bg-green-500/10 text-green-500 border-green-500/20'
+                                                        }`}>
+                                                            <div className={`w-1 h-1 rounded-full ${
+                                                                product.stock_status === 'red' ? 'bg-red-500 animate-pulse' : 
+                                                                product.stock_status === 'yellow' ? 'bg-yellow-500' : 
+                                                                'bg-green-500'
+                                                            }`} />
+                                                            <span>
+                                                                {product.stock_status === 'red' ? 'Sin stock' : 
+                                                                 product.stock_status === 'yellow' ? 'Stock limitado' : 
+                                                                 'En stock'}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {isOffer && (
+                                                        <button 
+                                                            onClick={() => toggleOfferDisplay(product.codigo)}
+                                                            className={`inline-flex items-center gap-1 border text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest transition-all ${
+                                                                isShowingOffer 
+                                                                    ? 'bg-red-500 text-white border-red-500 shadow-md scale-105' 
+                                                                    : 'bg-red-500/15 text-red-500 border-red-500/30 hover:bg-red-500/25'
+                                                            }`}
+                                                            title={isShowingOffer ? "Ver precio normal" : "Ver oferta"}
+                                                        >
+                                                            <Tag className="w-2.5 h-2.5" /> OFERTA
+                                                        </button>
+                                                    )}
+                                                    
+                                                    {isShowingOffer && product.oferta_descripcion && (
+                                                        <span className="text-[10px] text-red-500/70 font-bold italic truncate max-w-[150px]" title={product.oferta_descripcion}>
+                                                            {product.oferta_descripcion}
                                                         </span>
                                                     )}
-                                                    <span className={`text-sm font-bold transition-colors duration-300 ${isShowingOffer ? 'text-red-500 scale-110' : 'text-primary-500'}`}>
-                                                        ${formatPrice(finalPrice)}
-                                                    </span>
+                                                    
+                                                    <div className="flex items-baseline gap-2">
+                                                        {markup !== 0 && !isShowingOffer && (
+                                                            <span className="text-[10px] font-bold text-text-secondary tabular-nums">
+                                                                ${formatPrice(product.precio_lista * coeficiente)}
+                                                            </span>
+                                                        )}
+                                                        <span className={`text-sm font-bold transition-colors duration-300 ${isShowingOffer ? 'text-red-500 scale-110' : 'text-primary-500'}`}>
+                                                            ${formatPrice(finalPrice)}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                     </div>
 
                                     <div className="flex flex-col gap-2">
