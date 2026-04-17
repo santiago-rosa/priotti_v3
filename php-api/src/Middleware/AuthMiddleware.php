@@ -44,9 +44,6 @@ class AuthMiddleware
             }
 
         } catch (\Exception $e) {
-            if ($this->isOptional) {
-                return $handler->handle($request);
-            }
             return $this->unauthorized('Invalid or expired token');
         }
 

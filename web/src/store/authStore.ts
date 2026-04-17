@@ -14,6 +14,7 @@ interface AuthState {
     token: string | null;
     isInitializing: boolean;
     login: (user: User, role: 'client' | 'admin', token: string) => void;
+    updateToken: (token: string) => void;
     logout: () => void;
     initialize: () => void;
 }
@@ -28,6 +29,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         localStorage.setItem('v3_user', JSON.stringify(user));
         localStorage.setItem('v3_role', role);
         set({ user, role, token });
+    },
+    updateToken: (token) => {
+        localStorage.setItem('v3_token', token);
+        set({ token });
     },
     logout: () => {
         localStorage.removeItem('v3_token');

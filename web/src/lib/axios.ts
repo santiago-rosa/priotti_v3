@@ -9,9 +9,31 @@ export const api = axios.create({
 });
 
 // Add a request interceptor to inject the JWT
+let lastRefreshTime = 0;
+const REFRESH_THRESHOLD = 2 * 60 * 60 * 1000; // 2 hours
+
 api.interceptors.request.use(
-    (config) => {
-        const token = useAuthStore.getState().token;
+    async (config) => {
+        const { token, updateToken } = useAuthStore.getState();
+        
+        // Sliding session logic: refresh token if it's more than 2h old and user is active
+        const now = Date.now();
+        if (token && !config.url?.includes('/auth/refresh') && (now - lastRefreshTime > REFRESH_THRESHOLD)) {
+            // update lastRefreshTime immediately to prevent concurrent refresh calls
+            lastRefreshTime = now;
+            
+            // Background refresh
+            api.get('/auth/refresh')
+                .then(res => {
+                    if (res.data.token) {
+                        updateToken(res.data.token);
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to refresh token', err);
+                });
+        }
+
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
         }

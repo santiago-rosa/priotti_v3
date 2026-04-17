@@ -67,3 +67,41 @@ $app->post('/api/auth/login', function (Request $request, Response $response) {
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 });
+
+$app->get('/api/auth/refresh', function (Request $request, Response $response) {
+    try {
+        $user = $request->getAttribute('user');
+        if (!$user) {
+            $response->getBody()->write(json_encode(['error' => 'No autorizado']));
+            return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
+        }
+
+        $secret = $_ENV['JWT_SECRET'] ?? 'fallback_secret';
+        $minutes = (int)($_ENV['JWT_EXPIRATION'] ?? 720);
+
+        $payload = [
+            'id' => (int)$user->id,
+            'numero' => $user->numero,
+            'role' => $user->role,
+            'up_p' => (float)($user->up_p ?? 0),
+            'iat' => time(),
+            'exp' => time() + ($minutes * 60)
+        ];
+
+        $token = JWT::encode($payload, $secret, 'HS256');
+
+        $response->getBody()->write(json_encode([
+            'token' => $token,
+            'role' => $user->role,
+            'user' => [
+                'id' => (int)$user->id,
+                'numero' => $user->numero
+            ]
+        ]));
+
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => 'Error al refrescar token: ' . $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new \App\Middleware\AuthMiddleware());
