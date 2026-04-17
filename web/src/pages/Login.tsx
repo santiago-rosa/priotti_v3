@@ -34,10 +34,10 @@ export const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
+        <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
             <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
                 <img src={logo} alt="Priotti Logo" className="h-32 w-auto mx-auto mb-6 brightness-110" />
-                <h2 className="text-3xl font-black text-white tracking-tighter uppercase">
+                <h2 className="text-3xl font-black text-text-primary tracking-tighter uppercase">
                     FELIPE PRIOTTI <span className="text-primary-500">S.A.</span>
                 </h2>
                 <p className="mt-2 text-sm text-gray-500 font-medium">
@@ -46,7 +46,7 @@ export const Login = () => {
             </div>
 
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-surface py-10 px-4 shadow-2xl sm:rounded-2xl sm:px-10 border border-white/5 backdrop-blur-md">
+                <div className="bg-surface py-10 px-4 shadow-2xl sm:rounded-2xl sm:px-10 border backdrop-blur-md transition-all">
                     {error && (
                         <div className="mb-6 bg-red-500/10 border-l-4 border-red-500 p-4">
                             <div className="flex items-center">
@@ -69,7 +69,7 @@ export const Login = () => {
                                     required
                                     value={numero}
                                     onChange={(e) => setNumero(e.target.value)}
-                                    className="appearance-none block w-full px-4 py-3 bg-[#121212] border border-white/10 rounded-xl shadow-inner text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all sm:text-sm"
+                                    className="appearance-none block w-full px-4 py-3 bg-surface-darker border rounded-xl shadow-inner text-text-primary placeholder-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all sm:text-sm"
                                     placeholder="Ej: 1234"
                                 />
                             </div>
@@ -87,7 +87,7 @@ export const Login = () => {
                                     required
                                     value={cuit}
                                     onChange={(e) => setCuit(e.target.value)}
-                                    className="appearance-none block w-full px-4 py-3 bg-[#121212] border border-white/10 rounded-xl shadow-inner text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all sm:text-sm"
+                                    className="appearance-none block w-full px-4 py-3 bg-surface-darker border rounded-xl shadow-inner text-text-primary placeholder-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all sm:text-sm"
                                     placeholder="••••••••"
                                 />
                             </div>

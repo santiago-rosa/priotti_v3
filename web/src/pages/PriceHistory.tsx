@@ -84,16 +84,16 @@ export const PriceHistory = () => {
                 </div>
             </div>
 
-            <div className="bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl">
+            <div className="bg-surface rounded-3xl border overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-muted border-b border-white/5">
+                            <tr className="bg-muted border-b">
                                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary w-48">Fecha de Actualización</th>
                                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-text-secondary">Marcas Incluidas</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y border-white/5">
+                        <tbody className="divide-y">
                             {filteredHistory.length > 0 ? (
                                 filteredHistory.map((entry) => {
                                     const brands = entry.cambios ? entry.cambios.split(', ') : [];
@@ -108,13 +108,13 @@ export const PriceHistory = () => {
                                                     <div className="p-2 bg-primary-500/10 rounded-lg text-primary-500">
                                                         <Calendar className="w-4 h-4" />
                                                     </div>
-                                                    <span className="text-sm font-bold text-gray-200">{formatDate(entry.fecha)}</span>
+                                                    <span className="text-sm font-bold text-text-primary">{formatDate(entry.fecha)}</span>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-wrap gap-2">
                                                     {visibleBrands.map((marca, i) => (
-                                                        <span key={i} className="px-2 py-1 bg-muted border border-white/5 rounded text-[10px] font-black text-text-secondary uppercase tracking-tighter hover:text-white transition-colors cursor-default">
+                                                        <span key={i} className="px-2 py-1 bg-muted border rounded text-[10px] font-black text-text-secondary uppercase tracking-tighter hover:text-text-primary transition-colors cursor-default">
                                                             {marca}
                                                         </span>
                                                     ))}
@@ -135,7 +135,7 @@ export const PriceHistory = () => {
                                                     {isExpanded && brands.length > BRANDS_PREVIEW && (
                                                         <button
                                                             onClick={() => toggleRow(entry.id)}
-                                                            className="px-2 py-1 bg-white/5 text-text-secondary rounded text-[10px] font-black uppercase hover:bg-white/10 transition-colors cursor-pointer"
+                                                            className="px-2 py-1 bg-white/5 text-text-secondary rounded text-[10px] font-black uppercase hover:bg-white/10 hover:text-text-primary transition-colors cursor-pointer"
                                                         >
                                                             Ver menos
                                                         </button>

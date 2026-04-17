@@ -115,7 +115,7 @@ export const Navbar = () => {
                         {user && role === 'client' && (
                             <button
                                 onClick={() => setIsOpen(true)}
-                                className="relative p-2 mr-2 text-white"
+                                className="relative p-2 mr-2 text-text-primary"
                             >
                                 <ShoppingCart className="h-6 w-6" />
                                 {cartItemsCount > 0 && (
@@ -127,13 +127,13 @@ export const Navbar = () => {
                         )}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-primary-700"
+                            className="inline-flex items-center justify-center p-2 rounded-md text-text-primary hover:bg-primary-500/10"
                         >
                             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                         </button>
                         <button
                             onClick={toggleTheme}
-                            className="p-2 ml-2 text-white"
+                            className="p-2 ml-2 text-text-primary"
                         >
                             {theme === 'dark' ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
                         </button>
@@ -143,7 +143,7 @@ export const Navbar = () => {
 
             {/* Mobile Menu */}
             {mobileMenuOpen && (
-                <div className="md:hidden bg-[#0A0A0A] border-b border-white/5 pb-6">
+                <div className="md:hidden bg-surface border-b pb-6 animate-in slide-in-from-top duration-300">
                     <div className="pt-2 px-4 pb-3 space-y-2">
                         {user && (
                             <div className="flex items-center px-4 py-3 text-sm font-black border-b border-white/5 mb-4 text-primary-500 uppercase tracking-widest">

@@ -904,7 +904,7 @@ export const Catalog = () => {
                     <button
                         onClick={() => { const newPage = Math.max(1, page - 1); setPage(newPage); fetchProducts(true, newPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                         disabled={page === 1}
-                        className="p-2 rounded-xl bg-surface-darker text-text-secondary hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border whitespace-nowrap text-xs font-bold"
+                        className="p-2 rounded-xl bg-surface-darker text-text-secondary hover:text-text-primary hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border whitespace-nowrap text-xs font-bold"
                     >
                         &lt; Anterior
                     </button>
@@ -916,7 +916,7 @@ export const Catalog = () => {
                                     {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-600 px-1">...</span>}
                                     <button
                                         onClick={() => { setPage(p); fetchProducts(true, p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${page === p ? 'bg-primary-500 text-black shadow-lg scale-110' : 'bg-surface-darker text-text-secondary hover:bg-white/10 hover:text-white border border'}`}
+                                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${page === p ? 'bg-primary-500 text-black shadow-lg scale-110' : 'bg-surface-darker text-text-secondary hover:bg-white/10 hover:text-text-primary border border'}`}
                                     >
                                         {p}
                                     </button>
@@ -926,7 +926,7 @@ export const Catalog = () => {
                     <button
                         onClick={() => { const newPage = Math.min(totalPages, page + 1); setPage(newPage); fetchProducts(true, newPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                         disabled={page === totalPages}
-                        className="p-2 rounded-xl bg-surface-darker text-text-secondary hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border whitespace-nowrap text-xs font-bold"
+                        className="p-2 rounded-xl bg-surface-darker text-text-secondary hover:text-text-primary hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border whitespace-nowrap text-xs font-bold"
                     >
                         Siguiente &gt;
                     </button>
@@ -946,14 +946,14 @@ export const Catalog = () => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <div className="text-xs font-black tracking-widest text-primary-500 uppercase mb-1">{selectedInfoProduct.marca}</div>
-                                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center">
+                                    <h3 className="text-xl font-bold text-text-primary tracking-tight flex items-center">
                                         <Info className="w-5 h-5 mr-2 text-primary-500" />
                                         Detalles del Producto
                                     </h3>
                                 </div>
                                 <button 
                                     onClick={() => setSelectedInfoProduct(null)}
-                                    className="p-2 hover:bg-muted rounded-xl text-text-secondary hover:text-white transition-colors"
+                                    className="p-2 hover:bg-muted rounded-xl text-text-secondary hover:text-text-primary transition-colors"
                                 >
                                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -967,18 +967,18 @@ export const Catalog = () => {
                             <div className="space-y-6">
                                 <div>
                                     <div className="text-xs font-black text-text-secondary uppercase tracking-widest mb-3">Información Adicional</div>
-                                    <div className="bg-surface-darker p-5 rounded-2xl border border text-gray-300 text-sm leading-relaxed whitespace-pre-wrap italic">
+                                    <div className="bg-surface-darker p-5 rounded-2xl border border text-text-secondary text-sm leading-relaxed whitespace-pre-wrap italic">
                                         {selectedInfoProduct.info}
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-muted p-4 rounded-xl border border">
-                                        <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-1">Rubro</div>
+                                        <div className="text-[9px] font-black text-text-secondary/60 uppercase tracking-widest mb-1">Rubro</div>
                                         <div className="text-sm font-bold text-text-primary uppercase">{selectedInfoProduct.rubro}</div>
                                     </div>
                                     <div className="bg-muted p-4 rounded-xl border border">
-                                        <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-1">Aplicación</div>
+                                        <div className="text-[9px] font-black text-text-secondary/60 uppercase tracking-widest mb-1">Aplicación</div>
                                         <div className="text-sm font-bold text-text-primary uppercase">{selectedInfoProduct.aplicacion?.replace(/=/g, 'IDEM ') || 'N/A'}</div>
                                     </div>
                                 </div>
@@ -1007,7 +1007,7 @@ export const Catalog = () => {
                     />
                     <div className="relative bg-surface border border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all animate-in fade-in zoom-in duration-300">
                         <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border">
-                            <h3 className="text-xl font-bold text-white tracking-tight flex items-center">
+                            <h3 className="text-xl font-bold text-text-primary tracking-tight flex items-center">
                                 <Edit3 className="w-5 h-5 mr-2 text-blue-400" />
                                 Editar Información
                             </h3>
@@ -1026,7 +1026,7 @@ export const Catalog = () => {
                         <div className="p-6 bg-surface-darker border-t border flex justify-end space-x-3">
                             <button
                                 onClick={() => setEditingProductInfo(null)}
-                                className="px-6 py-2.5 text-text-secondary font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest"
+                                className="px-6 py-2.5 text-text-secondary font-bold hover:text-text-primary transition-colors uppercase text-[10px] tracking-widest"
                             >
                                 Cancelar
                             </button>
@@ -1057,7 +1057,7 @@ export const Catalog = () => {
                                         <span className="text-gray-600">•</span>
                                         <span className="text-text-secondary">{uploadingProduct.rubro}</span>
                                     </div>
-                                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                                    <h3 className="text-xl font-bold text-text-primary tracking-tight flex items-center gap-2">
                                         <ImagePlus className="w-5 h-5 text-primary-500" />
                                         Cargar Imagen del Producto
                                     </h3>
@@ -1068,7 +1068,7 @@ export const Catalog = () => {
                                         )}
                                     </p>
                                 </div>
-                                <button onClick={resetUploadModal} className="p-2 hover:bg-muted rounded-xl text-text-secondary hover:text-white transition-colors shrink-0">
+                                <button onClick={resetUploadModal} className="p-2 hover:bg-muted rounded-xl text-text-secondary hover:text-text-primary transition-colors shrink-0">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
@@ -1184,7 +1184,7 @@ export const Catalog = () => {
 
                                 {/* Footer */}
                                 <div className="flex justify-end gap-3 pt-1">
-                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-text-secondary font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">
+                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-text-secondary font-bold hover:text-text-primary transition-colors uppercase text-[10px] tracking-widest">
                                         Cancelar
                                     </button>
                                     <button
@@ -1240,7 +1240,7 @@ export const Catalog = () => {
 
                                 {/* Footer */}
                                 <div className="flex justify-end gap-3">
-                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-text-secondary font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">
+                                    <button onClick={resetUploadModal} className="px-5 py-2.5 text-text-secondary font-bold hover:text-text-primary transition-colors uppercase text-[10px] tracking-widest">
                                         Cancelar
                                     </button>
                                     <button
@@ -1297,10 +1297,10 @@ export const Catalog = () => {
                                     <p className="text-[9px] font-black text-red-400 uppercase tracking-[0.2em] mb-1 flex items-center gap-1.5">
                                         <Tag className="w-3 h-3" /> Precio de Oferta
                                     </p>
-                                    <h3 className="text-lg font-black text-white tracking-tight">{offerEditProduct.codigo}</h3>
+                                    <h3 className="text-lg font-black text-text-primary tracking-tight">{offerEditProduct.codigo}</h3>
                                     <p className="text-xs text-text-secondary uppercase">{offerEditProduct.marca} · {offerEditProduct.rubro}</p>
                                 </div>
-                                <button onClick={() => setOfferEditProduct(null)} className="p-2 hover:bg-white/10 rounded-xl text-text-secondary hover:text-white transition-colors">
+                                <button onClick={() => setOfferEditProduct(null)} className="p-2 hover:bg-white/10 rounded-xl text-text-secondary hover:text-text-primary transition-colors">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
@@ -1320,7 +1320,7 @@ export const Catalog = () => {
                                         value={tempOfferPrice}
                                         onChange={(e) => setTempOfferPrice(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleSaveOffer()}
-                                        className="flex-1 bg-transparent border-none text-white font-black text-lg focus:ring-0 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        className="flex-1 bg-transparent border-none text-text-primary font-black text-lg focus:ring-0 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                         autoFocus
                                     />
                                 </div>
@@ -1336,7 +1336,7 @@ export const Catalog = () => {
                                     Descripción de la oferta (opcional)
                                 </label>
                                 <textarea
-                                    className="w-full bg-surface-darker border border-red-500/20 rounded-xl px-4 py-3 text-white text-xs font-medium focus:ring-2 focus:ring-red-500/40 focus:border-red-500/50 outline-none transition-all resize-none h-24"
+                                    className="w-full bg-surface-darker border border-red-500/20 rounded-xl px-4 py-3 text-text-primary text-xs font-medium focus:ring-2 focus:ring-red-500/40 focus:border-red-500/50 outline-none transition-all resize-none h-24"
                                     placeholder="Ej: Oferta válida hasta fin de mes o agotar stock."
                                     value={tempOfferDesc}
                                     onChange={(e) => setTempOfferDesc(e.target.value)}

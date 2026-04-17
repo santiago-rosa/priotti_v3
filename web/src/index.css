@@ -3,29 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --background: #111111; /* Negro mate profundo (estilo dashboard example) */
-  --surface: #1C1C1C;    /* Gris carbón elevado para items */
-  --surface-light: #282828;
-  --surface-darker: #1C1C1C;
-  --text-primary: #FFFFFF;
-  --text-secondary: #999999;
-  --border: rgba(255, 255, 255, 0.06); /* Bordes sutiles neutros */
-  --muted: rgba(255, 255, 255, 0.04);
-  --primary: #FFB800; /* Priotti Gold exacto */
-  --primary-hover: #E6A600;
+  --background: #181c14; /* Exact Forest Black from the image */
+  --surface: #3c3d37;    /* Exact Stone surface */
+  --surface-light: #4e5048;
+  --surface-darker: #111210;
+  --text-primary: #ecdfcc; /* Exact Parchment text */
+  --text-secondary: #697565; /* Exact Sage secondary text */
+  --border: rgba(105, 117, 101, 0.2); 
+  --muted: rgba(105, 117, 101, 0.1);
+  --primary: #ffb800; /* Priotti Gold exacto */
+  --primary-hover: #e6a600;
 }
 
 .light {
-  --background: #E3EAF2;
-  --surface: #F0F4F8; /* Un tono grisáceo azulado para los items */
-  --surface-light: #F8FAFC;
-  --surface-darker: #D1DAE5;
-  --text-primary: #0F172A; /* Slate 900 para contraste */
-  --text-secondary: #475569;
-  --border: rgba(15, 23, 42, 0.08);
-  --muted: rgba(15, 23, 42, 0.04);
-  --primary: #FFB800;
-  --primary-hover: #e6a600;
+  --background: #fcfaf5; /* Ultra soft cream background */
+  --surface: #ffffff;
+  --surface-light: #ffffff;
+  --surface-darker: #f5ebd8; /* Champagne tone from the image */
+  --text-primary: #191306; /* Deep mocha/black for warm contrast */
+  --text-secondary: #5a4317; /* Warm earth tone */
+  --border: rgba(25, 19, 6, 0.08);
+  --muted: rgba(25, 19, 6, 0.04);
+  --primary: #d2a652; /* Warm gold from the palette */
+  --primary-hover: #b5872e;
 }
 
 @layer base {
@@ -34,8 +34,8 @@
     color: var(--text-primary);
     @apply font-sans antialiased;
     background-image:
-      radial-gradient(circle at 50% -10%, rgba(255, 184, 0, 0.08) 0%, transparent 60%),
-      radial-gradient(circle at 0% 100%, rgba(255, 184, 0, 0.04) 0%, transparent 40%);
+      radial-gradient(circle at 50% -10%, rgba(236, 223, 204, 0.06) 0%, transparent 60%),
+      radial-gradient(circle at 100% 100%, rgba(105, 117, 101, 0.12) 0%, transparent 40%);
     background-attachment: fixed;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
@@ -43,8 +43,8 @@
 
 .light body {
   background-image:
-    radial-gradient(circle at 50% -10%, rgba(56, 189, 248, 0.12) 0%, transparent 60%),
-    radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.08) 0%, transparent 40%);
+    radial-gradient(circle at 50% -10%, rgba(210, 166, 82, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(210, 166, 82, 0.08) 0%, transparent 40%);
 }
 
 /* Custom Scrollbar for a premium look */
