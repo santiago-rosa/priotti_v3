@@ -9,29 +9,44 @@ export const api = axios.create({
 });
 
 // Add a request interceptor to inject the JWT
-let lastRefreshTime = 0;
-const REFRESH_THRESHOLD = 2 * 60 * 60 * 1000; // 2 hours
+let isRefreshing = false;
 
 api.interceptors.request.use(
     async (config) => {
         const { token, updateToken } = useAuthStore.getState();
         
-        // Sliding session logic: refresh token if it's more than 2h old and user is active
-        const now = Date.now();
-        if (token && !config.url?.includes('/auth/refresh') && (now - lastRefreshTime > REFRESH_THRESHOLD)) {
-            // update lastRefreshTime immediately to prevent concurrent refresh calls
-            lastRefreshTime = now;
-            
-            // Background refresh
-            api.get('/auth/refresh')
-                .then(res => {
-                    if (res.data.token) {
-                        updateToken(res.data.token);
-                    }
-                })
-                .catch(err => {
-                    console.error('Failed to refresh token', err);
-                });
+        // Sliding session logic: refresh token based on its actual expiration percentage
+        if (token && !config.url?.includes('/auth/refresh') && !isRefreshing) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const payload = JSON.parse(window.atob(base64));
+                
+                const iat = payload.iat * 1000;
+                const exp = payload.exp * 1000;
+                const now = Date.now();
+                
+                // Refresh when 50% of token life has passed
+                const refreshThresholdTime = iat + (exp - iat) * 0.5;
+                
+                if (now > refreshThresholdTime) {
+                    isRefreshing = true;
+                    api.get('/auth/refresh')
+                        .then(res => {
+                            if (res.data.token) {
+                                updateToken(res.data.token);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Failed to refresh token', err);
+                        })
+                        .finally(() => {
+                            isRefreshing = false;
+                        });
+                }
+            } catch (e) {
+                // Ignore decoding errors
+            }
         }
 
         if (token && config.headers) {
