@@ -3,7 +3,7 @@ import { api } from '../lib/axios';
 import { formatPrice } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X, Calculator, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ImagePlus, Upload, CheckCircle, Globe, Link2, ExternalLink } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X, Calculator, ChevronLeft, ChevronRight, ImagePlus, Upload, CheckCircle, Globe, Link2, ExternalLink } from 'lucide-react';
 import logoFallback from '../assets/logopriotti.png';
 
 interface Product {
@@ -42,7 +42,6 @@ export const Catalog = () => {
     const [editingProductInfo, setEditingProductInfo] = useState<Product | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'compact'>('compact');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [showMobileControls, setShowMobileControls] = useState(false);
     const [defaultImageProducts, setDefaultImageProducts] = useState<Set<string>>(new Set());
     const [uploadingProduct, setUploadingProduct] = useState<Product | null>(null);
     const [uploadTab, setUploadTab] = useState<'web' | 'file'>('web');
@@ -65,7 +64,6 @@ export const Catalog = () => {
     const [offerEditProduct, setOfferEditProduct] = useState<Product | null>(null);
     const [tempOfferPrice, setTempOfferPrice] = useState('');
     const [tempOfferDesc, setTempOfferDesc] = useState('');
-    const [showOfferCodes, setShowOfferCodes] = useState<Set<string>>(new Set());
     const [isScrolled, setIsScrolled] = useState(false);
 
     const { role, user } = useAuthStore();
@@ -349,14 +347,13 @@ export const Catalog = () => {
     };
 
     const handleAddToCart = (product: Product, quantity = 1) => {
-        const isShowingOffer = showOfferCodes.has(product.codigo);
         const normalPrice = product.precio_lista * coeficiente;
         let finalPrice = normalPrice;
 
         const isOriginalOffer = product.precio_oferta > 0;
         const hasGlobalDiscount = !isOriginalOffer && (product.descuento_global || 0) > 0;
 
-        if (isOriginalOffer && isShowingOffer) {
+        if (isOriginalOffer) {
             finalPrice = product.precio_oferta;
         } else if (hasGlobalDiscount) {
             finalPrice = normalPrice * (1 - (product.descuento_global || 0) / 100);
@@ -384,10 +381,6 @@ export const Catalog = () => {
                 precio_oferta: newPrice,
                 oferta_descripcion: tempOfferDesc
             });
-            // If offer was removed, also remove from showing set
-            if (newPrice === 0) {
-                setShowOfferCodes(prev => { const next = new Set(prev); next.delete(offerEditProduct.codigo); return next; });
-            }
             setOfferEditProduct(null);
             await fetchProducts(false);
         } catch (error: any) {
@@ -395,133 +388,146 @@ export const Catalog = () => {
         }
     };
 
-    const toggleOfferDisplay = (codigo: string) => {
-        setShowOfferCodes(prev => {
-            const next = new Set(prev);
-            if (next.has(codigo)) next.delete(codigo);
-            else next.add(codigo);
-            return next;
-        });
-    };
 
     return (
         <div className="space-y-6 text-text-primary">
             {/* Header and Controls Container */}
-            <div className={`bg-surface rounded-2xl shadow-2xl border backdrop-blur-xl sticky top-[80px] z-30 ${isScrolled ? 'mx-4 py-1.5' : ''}`}>
-                {/* Always Visible Row: Search and Toggle */}
-                <div className={`flex flex-col lg:flex-row gap-4 px-4 md:px-6 ${isScrolled ? 'py-1' : 'py-4 md:py-6'}`}>
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                        {/* Search Bar */}
-                        <div className="relative flex-1 group">
+            <div className={`bg-surface rounded-2xl shadow-2xl border backdrop-blur-xl sticky top-[80px] z-30 overflow-hidden transition-all duration-300 ${isScrolled ? 'mx-4' : ''}`}>
+                <div className={`flex flex-col lg:flex-row items-stretch ${isScrolled ? 'min-h-0' : 'min-h-[160px]'}`}>
+                    {/* Left Section: Search & Filters */}
+                    <div className={`p-4 lg:p-6 flex flex-col justify-center gap-4 bg-surface/30 min-w-0 transition-all duration-300 ${isScrolled ? 'w-full grow' : 'w-full lg:w-4/6 lg:border-r border-white/5'}`}>
+                        <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Search className="h-4 w-4 text-text-secondary group-focus-within:text-primary-500" />
+                                <Search className="h-5 w-5 text-text-secondary group-focus-within:text-primary-500" />
                             </div>
                             <input
                                 type="text"
-                                className={`block w-full pl-10 pr-4 bg-white/90 border-2 border-primary-500/20 rounded-xl focus:ring-4 focus:ring-primary-500/30 focus:border-primary-500 text-sm text-black placeholder-black/40 font-bold outline-none shadow-xl transition-all ${isScrolled ? 'py-2' : 'py-4'}`}
-                                placeholder="¿Qué buscás? (código, aplicación, marca...)"
+                                className={`block w-full pl-12 pr-4 bg-white/95 border-2 border-primary-500/10 rounded-xl focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 text-base text-black placeholder-black/30 font-bold outline-none shadow-xl transition-all ${isScrolled ? 'py-2.5' : 'py-4'}`}
+                                placeholder="Búsqueda rápida de productos, marcas o rubros..."
                                 value={search}
                                 onChange={(e) => { setSearch(e.target.value); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
                             />
                         </div>
 
-                        {/* Expand Button (Mobile Only) */}
+                        {/* Condensed Filters Row */}
                         {!isScrolled && (
-                            <button
-                                onClick={() => setShowMobileControls(!showMobileControls)}
-                                className="md:hidden bg-primary-500 text-black p-3 rounded-xl shadow-lg active:scale-95 shrink-0"
-                                title={showMobileControls ? "Ocultar filtros" : "Más filtros"}
-                            >
-                                {showMobileControls ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                            </button>
+                            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+                                <div className="flex items-center bg-surface-darker/80 border border-white/5 rounded-xl px-4 py-2.5 text-xs font-black shrink-0">
+                                    <Calculator className="w-4 h-4 text-primary-500 mr-3" />
+                                    <span className="text-text-secondary mr-2">% MARGEN:</span>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={calcValue}
+                                        onChange={(e) => { setCalcValue(e.target.value); localStorage.setItem('priotti-calc-value', e.target.value); }}
+                                        className="w-12 bg-transparent border-none text-text-primary focus:ring-0 outline-none text-right font-black"
+                                    />
+                                </div>
+                                <div className="flex gap-1.5 h-10">
+                                    {user && role === 'admin' && (
+                                        <button
+                                            onClick={handleBulkUpdateThresholds}
+                                            className="px-3 rounded-xl transition-all bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/10"
+                                            title="Actualización por Bloque"
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => { setFilter('all'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'all' && !brandFilter ? 'bg-primary-500 text-black shadow-lg' : 'bg-surface-darker/60 text-text-secondary hover:text-white'}`}
+                                    >
+                                        <Filter className="w-4 h-4" /> Todos
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilter('offers'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'}`}
+                                    >
+                                        <Tag className="w-4 h-4" /> Ofertas
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilter('news'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20'}`}
+                                    >
+                                        <Clock className="w-4 h-4" /> Novedades
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={handleDownloadExcel}
+                                    className="px-4 h-10 bg-surface-darker/60 text-text-secondary hover:text-primary-500 rounded-xl transition-all border border-white/5 ml-auto flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                >
+                                    <Download className="w-4 h-4" /> Excel
+                                </button>
+                            </div>
                         )}
                     </div>
 
-                    {/* Global Offers Carousel */}
-                    {activeDiscounts.length > 0 && !isScrolled && (
-                        <div 
-                            className="w-full lg:w-1/2 xl:w-2/5 flex items-center gap-3 border-t lg:border-t-0 lg:border-l border-white/10 pt-4 lg:pt-0 lg:pl-6 relative group/carousel"
-                            onMouseEnter={() => setIsPaused(true)}
-                            onMouseLeave={() => setIsPaused(false)}
-                        >
-                            <button 
-                                onClick={() => {
-                                    setIsTransitioning(true);
-                                    setCarouselIndex(prev => prev - 1);
-                                }}
-                                className="absolute left-2 lg:left-8 z-20 p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-xl opacity-0 group-hover/carousel:opacity-100 transition-all border border-white/10"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-
-                            <div className="flex-1 overflow-hidden h-[60px] relative px-8 lg:px-12">
+                    {/* Right Section: Compact Carousel - Hidden if scrolled */}
+                    {!isScrolled && (
+                        <div className="w-full lg:w-2/6 bg-surface-darker/10 relative overflow-hidden group/carousel min-w-0">
+                            {activeDiscounts.length > 0 ? (
                                 <div 
-                                    className={`flex ${isTransitioning ? 'transition-transform duration-700 ease-in-out' : ''} h-full`}
-                                    style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
-                                    onTransitionEnd={handleTransitionEnd}
+                                    className="h-full w-full relative"
+                                    onMouseEnter={() => setIsPaused(true)}
+                                    onMouseLeave={() => setIsPaused(false)}
                                 >
-                                    {[...activeDiscounts, ...activeDiscounts.slice(0, 1)].map((d, idx) => (
-                                        <div key={`${d.id}-${idx}`} className="w-full h-full flex-shrink-0 flex items-center justify-center">
-                                            <button
-                                                onClick={() => {
-                                                    if (brandFilter === d.marca && rubroFilter === d.rubro) {
-                                                        setBrandFilter('');
-                                                        setRubroFilter('');
-                                                    } else {
-                                                        setBrandFilter(d.marca);
-                                                        setRubroFilter(d.rubro);
-                                                        setSearch('');
-                                                        setFilter('all');
-                                                    }
-                                                    setPage(1);
-                                                }}
-                                                className={`w-full max-w-sm bg-surface-darker/60 hover:bg-surface-light border rounded-xl px-4 py-2.5 flex items-center gap-4 transition-all group/item shadow-lg hover:-translate-y-0.5 active:scale-95 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'border-primary-500 ring-1 ring-primary-500/50' : 'border-white/10'}`}
-                                            >
-                                                <div className="p-2 bg-primary-500/10 rounded-lg group-hover/item:bg-primary-500/20 transition-colors">
-                                                    <Tag className="w-4 h-4 text-primary-500" />
-                                                </div>
-                                                <div className="flex flex-col items-start leading-none min-w-[80px]">
-                                                    <span className="text-[11px] font-black text-primary-500 uppercase tracking-tighter mb-0.5">DTO EXTRA {d.porcentaje}%</span>
-                                                    <span className="text-[10px] text-text-secondary font-black uppercase tracking-widest truncate max-w-[120px]">{d.marca}</span>
-                                                    <span className="text-[8px] text-text-secondary/50 font-bold uppercase truncate max-w-[120px]">{d.rubro}</span>
-                                                </div>
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                                    {/* Nav Buttons */}
+                                    <button 
+                                        onClick={() => { setIsTransitioning(true); setCarouselIndex(prev => prev - 1); }}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/40 hover:bg-black/80 text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all backdrop-blur-md border border-white/10"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
 
-                            <button 
-                                onClick={() => {
-                                    setIsTransitioning(true);
-                                    setCarouselIndex(prev => prev + 1);
-                                }}
-                                className="absolute right-2 z-20 p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-xl opacity-0 group-hover/carousel:opacity-100 transition-all border border-white/10"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
+                                    <div className="h-full w-full overflow-hidden">
+                                        <div 
+                                            className={`h-full flex ${isTransitioning ? 'transition-transform duration-700 cubic-bezier(0.4, 0, 0.2, 1)' : ''}`}
+                                            style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+                                            onTransitionEnd={handleTransitionEnd}
+                                        >
+                                            {[...activeDiscounts, ...activeDiscounts.slice(0, 1)].map((d, idx) => (
+                                                <div key={`discount-${d.id || idx}-${idx}`} className="w-full min-w-full h-full flex-shrink-0 flex items-center justify-center p-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (brandFilter === d.marca && rubroFilter === d.rubro) {
+                                                                setBrandFilter(''); setRubroFilter('');
+                                                            } else {
+                                                                setBrandFilter(d.marca); setRubroFilter(d.rubro); setSearch(''); setFilter('all');
+                                                            }
+                                                            setPage(1);
+                                                        }}
+                                                        className={`group/card relative w-full h-full max-h-[140px] flex items-center gap-4 px-6 rounded-2xl transition-all duration-300 ${brandFilter === d.marca && rubroFilter === d.rubro 
+                                                            ? 'bg-primary-500 text-black shadow-2xl scale-95' 
+                                                            : 'bg-surface border border-white/5 shadow-xl'}`}
+                                                    >
+                                                        <div className={`p-2.5 rounded-xl transition-all duration-500 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'bg-black/10 scale-110' : 'bg-primary-500/10'}`}>
+                                                            <Tag className={`w-6 h-6 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black' : 'text-primary-500'}`} />
+                                                        </div>
+                                                        <div className="flex flex-col items-start text-left min-w-0 flex-1">
+                                                            <span className={`text-base font-black uppercase tracking-tighter ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black' : 'text-primary-500'}`}>DTO {d.porcentaje}%</span>
+                                                            <h4 className={`text-xs font-black uppercase tracking-widest truncate w-full ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black/80' : 'text-text-primary'}`}>{d.marca}</h4>
+                                                            <span className={`text-[9px] font-bold uppercase truncate w-full ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black/60' : 'text-text-secondary'}`}>{d.rubro}</span>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => { setIsTransitioning(true); setCarouselIndex(prev => prev + 1); }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/40 hover:bg-black/80 text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all backdrop-blur-md border border-white/10"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-text-secondary/10">
+                                    <Tag className="w-10 h-10" />
+                                </div>
+                            )}
                         </div>
                     )}
-
-                    {/* View Mode Toggle (Desktop) */}
-                    <div className={`hidden md:flex items-center gap-4 ${isScrolled ? 'scale-90 opacity-80' : ''}`}>
-                        <div className="flex bg-surface-darker p-1 rounded-xl border border-white/10 shrink-0">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`rounded-lg ${isScrolled ? 'p-1.5' : 'p-2.5'} ${viewMode === 'grid' ? 'bg-primary-500 text-black shadow-lg' : 'text-text-secondary hover:text-white'}`}
-                                title="Vista Cuadrícula"
-                            >
-                                <LayoutGrid className={isScrolled ? "w-4 h-4" : "w-5 h-5"} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('compact')}
-                                className={`rounded-lg ${isScrolled ? 'p-1.5' : 'p-2.5'} ${viewMode === 'compact' ? 'bg-primary-500 text-black shadow-lg' : 'text-text-secondary hover:text-white'}`}
-                                title="Vista Compacta"
-                            >
-                                <List className={isScrolled ? "w-4 h-4" : "w-5 h-5"} />
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Brand Pills – hidden if scrolled */}
@@ -559,117 +565,31 @@ export const Catalog = () => {
                         )}
                     </div>
                 )}
-
-                {/* Collapsible Section: Mode (on mobile), Calculator, Filters - hidden if scrolled */}
-                {!isScrolled && (
-                    <div className={`${showMobileControls ? 'block' : 'hidden'} md:block transition-all animate-in fade-in slide-in-from-top-1 duration-300`}>
-                        <div className="px-4 pb-6 md:px-6 md:pb-6 border-t md:border-t-0 border space-y-4 md:space-y-0 md:flex md:flex-row md:items-center md:gap-4">
-
-                            {/* View Mode (Mobile-only within collapse) */}
-                            <div className="md:hidden flex justify-between items-center py-2 border-b border">
-                                <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Modo de vista:</span>
-                                <div className="flex bg-surface-darker p-1 rounded-xl border border-white/10 shrink-0">
-                                    <button
-                                        onClick={() => setViewMode('grid')}
-                                        className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black' : 'text-text-secondary'}`}
-                                    >
-                                        <LayoutGrid className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => setViewMode('compact')}
-                                        className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black' : 'text-text-secondary'}`}
-                                    >
-                                        <List className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Price Calculator */}
-                            <div className="relative group/calc w-full md:w-auto">
-                                <div className="flex items-center bg-surface-darker border rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary-500/50 transition-all shadow-inner uppercase tracking-widest text-[10px] font-black">
-                                    <Calculator className="w-4 h-4 text-primary-500 mr-3 shrink-0" />
-                                    <span className="text-text-secondary mr-2 shrink-0">%:</span>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={calcValue}
-                                        onChange={(e) => {
-                                            setCalcValue(e.target.value);
-                                            localStorage.setItem('priotti-calc-value', e.target.value);
-                                        }}
-                                        className="flex-1 md:w-14 bg-transparent border-none text-sm font-black text-text-primary focus:ring-0 outline-none text-right placeholder-text-secondary/30"
-                                        placeholder="0.0"
-                                    />
-                                </div>
-                                {/* Tooltip explicativo */}
-                                <div className="absolute top-full mt-2 left-0 w-64 bg-surface border p-4 rounded-2xl text-[10px] font-bold text-text-secondary opacity-0 group-hover/calc:opacity-100 transition-all translate-y-2 group-hover/calc:translate-y-0 pointer-events-none z-50 shadow-2xl backdrop-blur-xl">
-                                    <p className="text-primary-500 uppercase tracking-widest mb-2 flex items-center">
-                                        <Info className="w-3.5 h-3.5 mr-2" /> ¿Cómo funciona?
-                                    </p>
-                                    <p className="mb-2 leading-relaxed">
-                                        Aplica un margen de ganancia o descuento temporal a los precios que ves en pantalla.
-                                    </p>
-                                    <div className="space-y-1 bg-surface-darker p-2 rounded-lg border">
-                                        <p><span className="text-white font-black">+ :</span> Aumenta precio.</p>
-                                        <p><span className="text-white font-black">- :</span> Aplica descuento.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Filters and Actions (User Only) */}
-                            {user && (
-                                <div className="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto items-center">
-                                    {role === 'admin' && (
-                                        <button
-                                            onClick={handleBulkUpdateThresholds}
-                                            className="p-3 md:px-5 md:py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20"
-                                        >
-                                            <Settings className="w-4 h-4 md:mr-2" />
-                                            <span className="hidden md:inline">Bloque</span>
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => { setFilter('all'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
-                                        className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'all' && !brandFilter ? 'bg-primary-500 text-black shadow-lg' : 'bg-muted text-text-secondary border border'}`}
-                                    >
-                                        <Filter className="w-4 h-4 md:mr-2" />
-                                        <span className="hidden md:inline">Todos</span>
-                                    </button>
-                                    <button
-                                        onClick={() => { setFilter('offers'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
-                                        className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}
-                                    >
-                                        <Tag className="w-4 h-4 md:mr-2" />
-                                        <span className="hidden md:inline">Ofertas</span>
-                                    </button>
-                                    <button
-                                        onClick={() => { setFilter('news'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
-                                        className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}
-                                    >
-                                        <Clock className="w-4 h-4 md:mr-2" />
-                                        <span className="hidden md:inline">Novedades</span>
-                                    </button>
-
-
-                                    <button
-                                        onClick={handleDownloadExcel}
-                                        title="Descargar Excel"
-                                        className="p-3 md:px-5 md:py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all bg-primary-500/10 text-primary-500 border border-primary-500/20"
-                                    >
-                                        <Download className="w-5 h-5 md:w-4 md:h-4 md:mr-2" />
-                                        <span className="hidden md:inline">Excel</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Grid */}
             {!loading && totalItems > 0 && (
                 <div className="flex justify-between items-center mb-2 text-[10px] font-black text-text-secondary px-2 uppercase tracking-widest">
-                    <span>{totalItems} resultados</span>
+                    <div className="flex items-center gap-4">
+                        <span>{totalItems} resultados</span>
+                        
+                        <div className="flex bg-surface-darker p-0.5 rounded-lg border border-white/5 shadow-inner scale-90">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black shadow-md' : 'text-text-secondary hover:text-white'}`}
+                                title="Vista Cuadrícula"
+                            >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('compact')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black shadow-md' : 'text-text-secondary hover:text-white'}`}
+                                title="Vista Compacta"
+                            >
+                                <List className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
                     <span>Pág {page} de {totalPages}</span>
                 </div>
             )}
@@ -691,7 +611,6 @@ export const Catalog = () => {
                         const isOriginalOffer = product.precio_oferta > 0;
                         const hasGlobalDiscount = !isOriginalOffer && (product.descuento_global || 0) > 0;
                         
-                        const isShowingOffer = showOfferCodes.has(product.codigo);
                         const markup = parseFloat(calcValue) || 0;
 
                         // Normal price with calculator
@@ -704,12 +623,8 @@ export const Catalog = () => {
                         let showOfferBadge = isOriginalOffer; // Only show toggle badge for original/individual offers
 
                         if (isOriginalOffer) {
-                            if (isShowingOffer) {
-                                displayPrice = product.precio_oferta;
-                                strikedPrice = normalPrice;
-                            } else if (markup !== 0) {
-                                strikedPrice = product.precio_lista * coeficiente;
-                            }
+                            displayPrice = product.precio_oferta;
+                            strikedPrice = normalPrice;
                         } else if (hasGlobalDiscount) {
                             const discount = product.descuento_global || 0;
                             displayPrice = normalPrice * (1 - discount / 100);
@@ -787,19 +702,14 @@ export const Catalog = () => {
                                                     </div>
                                                 )}
                                                 {showOfferBadge && (
-                                                    <button
-                                                        onClick={() => toggleOfferDisplay(product.codigo)}
-                                                        className={`inline-flex items-center gap-1 border text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest transition-all ${isShowingOffer
-                                                                ? 'bg-red-500 text-white border-red-500 shadow-md scale-105'
-                                                                : 'bg-red-500/15 text-red-500 border-red-500/30 hover:bg-red-500/25'
-                                                            }`}
-                                                        title={isShowingOffer ? "Ver precio normal" : "Ver oferta individual"}
+                                                    <div
+                                                        className="inline-flex items-center gap-1 border text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest bg-red-500 text-white border-red-500 shadow-md"
                                                     >
                                                         <Tag className="w-2.5 h-2.5" /> OFERTA
-                                                    </button>
+                                                    </div>
                                                 )}
 
-                                                {(isShowingOffer || hasGlobalDiscount) && offerDescription && (
+                                                {(isOriginalOffer || hasGlobalDiscount) && offerDescription && (
                                                     <span className="text-[10px] text-red-500/70 font-bold italic truncate max-w-[150px]" title={offerDescription}>
                                                         {offerDescription}
                                                     </span>
@@ -811,7 +721,7 @@ export const Catalog = () => {
                                                             ${formatPrice(strikedPrice)}
                                                         </span>
                                                     )}
-                                                    <span className={`text-sm font-bold transition-colors duration-300 ${(isShowingOffer || hasGlobalDiscount) ? 'text-red-500 scale-110' : 'text-primary-500'}`}>
+                                                    <span className={`text-sm font-bold transition-colors duration-300 ${(isOriginalOffer || hasGlobalDiscount) ? 'text-red-500 scale-110' : 'text-primary-500'}`}>
                                                         ${formatPrice(finalPrice)}
                                                     </span>
                                                 </div>
@@ -857,17 +767,11 @@ export const Catalog = () => {
                         return (
                             <div key={product.codigo} className="bg-surface rounded-2xl shadow-xl border border hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
                                 {user && showOfferBadge && (
-                                    <button
-                                        onClick={() => toggleOfferDisplay(product.codigo)}
-                                        className="absolute top-3 right-3 z-30"
-                                    >
-                                        <div className={`text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center uppercase tracking-widest transition-all ${isShowingOffer
-                                                ? 'bg-red-600 text-white border-2 border-white/20'
-                                                : 'bg-red-600/80 text-white hover:bg-red-600'
-                                            }`}>
-                                            <Tag className="w-2 h-2 mr-1" /> OFERTA {isShowingOffer ? 'ACTIVA' : ''}
+                                    <div className="absolute top-3 right-3 z-30">
+                                        <div className="bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center uppercase tracking-widest border-2 border-white/20">
+                                            <Tag className="w-2 h-2 mr-1" /> OFERTA
                                         </div>
-                                    </button>
+                                    </div>
                                 )}
                                 {user && hasGlobalDiscount && (
                                     <div className="absolute top-3 right-3 z-30">
@@ -1006,7 +910,7 @@ export const Catalog = () => {
                                                         ${formatPrice(strikedPrice)}
                                                     </span>
                                                 )}
-                                                {(isShowingOffer || hasGlobalDiscount) && offerDescription && (
+                                                {(isOriginalOffer || hasGlobalDiscount) && offerDescription && (
                                                     <div className="bg-red-500/5 border border-red-500/10 rounded-lg p-2 mb-2 max-w-[200px]">
                                                         <p className="text-[10px] text-red-400 font-bold italic leading-tight">
                                                             {offerDescription}
@@ -1014,8 +918,8 @@ export const Catalog = () => {
                                                     </div>
                                                 )}
                                                 <div className="flex items-baseline">
-                                                    <span className={`text-xs font-bold mr-1 ${(isShowingOffer || hasGlobalDiscount) ? 'text-red-500' : 'text-primary-500/80'}`}>$</span>
-                                                    <span className={`text-2xl font-bold tracking-tighter transition-all duration-300 ${(isShowingOffer || hasGlobalDiscount) ? 'text-red-500 scale-105 origin-left' : 'text-primary-500'}`}>
+                                                    <span className={`text-xs font-bold mr-1 ${(isOriginalOffer || hasGlobalDiscount) ? 'text-red-500' : 'text-primary-500/80'}`}>$</span>
+                                                    <span className={`text-2xl font-bold tracking-tighter transition-all duration-300 ${(isOriginalOffer || hasGlobalDiscount) ? 'text-red-500 scale-105 origin-left' : 'text-primary-500'}`}>
                                                         {formatPrice(finalPrice)}
                                                     </span>
                                                 </div>
