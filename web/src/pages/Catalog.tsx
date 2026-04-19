@@ -110,11 +110,11 @@ export const Catalog = () => {
         const handleScroll = () => {
             if (!ticking) {
                 window.requestAnimationFrame(() => {
-                    // hysteresis: expand at < 10px, shrink at > 60px
+                    // hysteresis: expand at < 50px, shrink at > 200px
                     const currentScroll = window.scrollY;
-                    if (currentScroll > 60) {
+                    if (currentScroll > 200) {
                         setIsScrolled(true);
-                    } else if (currentScroll < 10) {
+                    } else if (currentScroll < 50) {
                         setIsScrolled(false);
                     }
                     ticking = false;
