@@ -501,28 +501,36 @@ export const Catalog = () => {
                                         >
                                             {[...activeDiscounts, ...activeDiscounts.slice(0, 1)].map((d, idx) => (
                                                 <div key={`discount-${d.id || idx}-${idx}`} className="w-full min-w-full h-full flex-shrink-0 flex items-center justify-center p-3">
-                                                    <button
-                                                        onClick={() => {
-                                                            if (brandFilter === d.marca && rubroFilter === d.rubro) {
-                                                                setBrandFilter(''); setRubroFilter('');
-                                                            } else {
-                                                                setBrandFilter(d.marca); setRubroFilter(d.rubro); setSearch(''); setFilter('all');
-                                                            }
-                                                            setPage(1);
-                                                        }}
-                                                        className={`group/card relative w-full h-full max-h-[140px] flex items-center gap-4 px-6 rounded-2xl transition-all duration-300 ${brandFilter === d.marca && rubroFilter === d.rubro 
-                                                            ? `bg-primary-500 text-black shadow-2xl scale-95 ${!loading && totalItems === 0 ? 'animate-blink-attention' : ''}` 
-                                                            : 'bg-surface border border-white/5 shadow-xl'}`}
-                                                    >
-                                                        <div className={`p-2.5 rounded-xl transition-all duration-500 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'bg-black/10 scale-110' : 'bg-primary-500/10'}`}>
-                                                            <Tag className={`w-6 h-6 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black' : 'text-primary-500'}`} />
-                                                        </div>
-                                                        <div className="flex flex-col items-start text-left min-w-0 flex-1">
-                                                            <span className={`text-base font-black uppercase tracking-tighter ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black' : 'text-primary-500'}`}>DTO {d.porcentaje}%</span>
-                                                            <h4 className={`text-xs font-black uppercase tracking-widest truncate w-full ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black/80' : 'text-text-primary'}`}>{d.marca}</h4>
-                                                            <span className={`text-[9px] font-bold uppercase truncate w-full ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black/60' : 'text-text-secondary'}`}>{d.rubro}</span>
-                                                        </div>
-                                                    </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (brandFilter === d.marca && rubroFilter === d.rubro) {
+                                                                    setBrandFilter(''); setRubroFilter('');
+                                                                } else {
+                                                                    setBrandFilter(d.marca); setRubroFilter(d.rubro); setSearch(''); setFilter('all');
+                                                                }
+                                                                setPage(1);
+                                                            }}
+                                                            className={`group/card relative w-full h-full max-h-[140px] flex items-center gap-4 pl-6 pr-2 rounded-2xl transition-all duration-300 ${brandFilter === d.marca && rubroFilter === d.rubro 
+                                                                ? `bg-primary-500 text-black shadow-2xl scale-95 ${!loading && totalItems === 0 ? 'animate-blink-attention' : ''}` 
+                                                                : 'bg-surface border border-white/5 shadow-xl'}`}
+                                                        >
+                                                            <div className={`p-2.5 rounded-xl transition-all duration-500 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'bg-black/10 scale-110' : 'bg-primary-500/10'}`}>
+                                                                <Tag className={`w-6 h-6 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black' : 'text-primary-500'}`} />
+                                                            </div>
+                                                            <div className="flex flex-col items-start text-left min-w-0 flex-1">
+                                                                <span className={`text-base font-black uppercase tracking-tighter ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black' : 'text-primary-500'}`}>DTO {d.porcentaje}%</span>
+                                                                <h4 className={`text-xs font-black uppercase tracking-widest truncate w-full ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black/80' : 'text-text-primary'}`}>{d.marca}</h4>
+                                                                <span className={`text-[9px] font-bold uppercase truncate w-full ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black/60' : 'text-text-secondary'}`}>{d.rubro}</span>
+                                                            </div>
+                                                            <div className="w-32 h-32 flex-shrink-0 relative rounded-2xl overflow-hidden bg-black/10 border border-white/5">
+                                                                <img 
+                                                                    src={`${api.defaults.baseURL}/products/image/${encodeURIComponent((d.marca + '_' + d.rubro).replace(/[/ ]/g, (m) => m === '/' ? '-' : '_'))}`}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
+                                                                    onError={(e) => (e.currentTarget.parentElement ? e.currentTarget.parentElement.style.display = 'none' : null)}
+                                                                />
+                                                            </div>
+                                                        </button>
                                                 </div>
                                             ))}
                                         </div>

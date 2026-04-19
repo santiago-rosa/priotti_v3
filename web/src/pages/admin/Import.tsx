@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../lib/axios';
-import { Users, TrendingUp, Activity, Award, Tag, Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { Users, TrendingUp, Activity, Award, Tag, Plus, Trash2, Settings as SettingsIcon, ImagePlus } from 'lucide-react';
 
 interface Stats {
     orders30d: number;
@@ -302,7 +302,7 @@ export const AdminImport = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-6 space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="mt-6 space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                 {discounts.length === 0 ? (
                                     <p className="text-[10px] text-gray-500 italic text-center py-4">No hay descuentos globales configurados</p>
                                 ) : (
@@ -312,15 +312,45 @@ export const AdminImport = () => {
                                                 <span className="font-black text-amber-500 uppercase tracking-tighter">{d.porcentaje}% OFF</span>
                                                 <span className="text-gray-400 font-medium">{d.marca} › {d.rubro}</span>
                                             </div>
-                                            <button 
-                                                onClick={() => handleDeleteDiscount(d.id)}
-                                                className="text-gray-600 hover:text-red-500 p-2 transition-colors opacity-0 group-hover/item:opacity-100"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center gap-1">
+                                                <button 
+                                                    onClick={() => {
+                                                        const input = document.createElement('input');
+                                                        input.type = 'file';
+                                                        input.accept = 'image/*';
+                                                        input.onchange = async (e: any) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            const formData = new FormData();
+                                                            formData.append('image', file);
+                                                            formData.append('marca', d.marca);
+                                                            formData.append('rubro', d.rubro);
+                                                            try {
+                                                                await api.post('/discounts/image', formData, {
+                                                                    headers: { 'Content-Type': 'multipart/form-data' }
+                                                                });
+                                                                alert('Imagen de promo subida con éxito!');
+                                                            } catch (err) {
+                                                                alert('Error al subir imagen');
+                                                            }
+                                                        };
+                                                        input.click();
+                                                    }}
+                                                    className="text-gray-600 hover:text-amber-500 p-2 transition-colors opacity-0 group-hover/item:opacity-100"
+                                                    title="Subir imagen de promo"
+                                                >
+                                                    <ImagePlus className="w-4 h-4" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDeleteDiscount(d.id)}
+                                                    className="text-gray-600 hover:text-red-500 p-2 transition-colors opacity-0 group-hover/item:opacity-100"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))
-                                )}
+                                )                                }
                             </div>
                         </div>
                     </div>

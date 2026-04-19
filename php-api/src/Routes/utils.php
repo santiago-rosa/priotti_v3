@@ -211,3 +211,56 @@ $app->delete('/api/discounts/{id}', function (Request $request, Response $respon
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));
+
+// Helper function to resolve images path (mirrored from products.php)
+if (!function_exists('resolveImagesPath')) {
+    function resolveImagesPath(): string
+    {
+        $configured = trim($_ENV['PRODUCTS_IMAGES_PATH'] ?? 'Resources/fotos');
+        if (str_starts_with($configured, '/')) return $configured;
+        $projectRoot = realpath(__DIR__ . '/../../../') ?: dirname(__DIR__, 3);
+        return rtrim($projectRoot, '/') . '/' . ltrim($configured, '/');
+    }
+}
+
+$app->post('/api/discounts/image', function (Request $request, Response $response) {
+    $uploadedFiles = $request->getUploadedFiles();
+    $data = $request->getParsedBody();
+    $marca = $data['marca'] ?? '';
+    $rubro = $data['rubro'] ?? '';
+
+    if (empty($uploadedFiles['image']) || empty($marca) || empty($rubro)) {
+        $response->getBody()->write(json_encode(['error' => 'Falta imagen, marca o rubro']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    $uploadedFile = $uploadedFiles['image'];
+    if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+        $response->getBody()->write(json_encode(['error' => 'Error al subir el archivo']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $baseFilename = str_replace(['/', ' '], ['-', '_'], $marca . '_' . $rubro);
+        $basePath = resolveImagesPath();
+        
+        if (!is_dir($basePath)) mkdir($basePath, 0775, true);
+
+        // Remove existing
+        $existing = glob(rtrim($basePath, '/') . '/' . $baseFilename . '.*');
+        if ($existing) { foreach ($existing as $old) @unlink($old); }
+
+        $extMap = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        $ext = $extMap[$uploadedFile->getClientMediaType()] ?? 'jpg';
+        
+        $newFilename = $baseFilename . '.' . $ext;
+        $destPath = rtrim($basePath, '/') . '/' . $newFilename;
+        $uploadedFile->moveTo($destPath);
+
+        $response->getBody()->write(json_encode(['message' => 'Imagen de promo subida!', 'filename' => $newFilename]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
