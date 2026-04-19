@@ -435,19 +435,33 @@ export const Catalog = () => {
                                     )}
                                     <button
                                         onClick={() => { setFilter('all'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
-                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'all' && !brandFilter ? 'bg-primary-500 text-black shadow-lg' : 'bg-surface-darker/60 text-text-secondary hover:text-white'}`}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'all' && !brandFilter && !rubroFilter ? 'bg-primary-500 text-black shadow-lg' : 'bg-surface-darker/60 text-text-secondary hover:text-white'}`}
                                     >
                                         <Filter className="w-4 h-4" /> Todos
                                     </button>
                                     <button
-                                        onClick={() => { setFilter('offers'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
-                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'}`}
+                                        onClick={() => { 
+                                            if (filter === 'offers') {
+                                                setFilter('all');
+                                            } else {
+                                                setFilter('offers'); setBrandFilter(''); setRubroFilter(''); 
+                                            }
+                                            setPage(1); 
+                                        }}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'} ${!loading && totalItems === 0 && filter === 'offers' ? 'animate-blink-attention' : ''}`}
                                     >
                                         <Tag className="w-4 h-4" /> Ofertas
                                     </button>
                                     <button
-                                        onClick={() => { setFilter('news'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
-                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20'}`}
+                                        onClick={() => { 
+                                            if (filter === 'news') {
+                                                setFilter('all');
+                                            } else {
+                                                setFilter('news'); setBrandFilter(''); setRubroFilter(''); 
+                                            }
+                                            setPage(1); 
+                                        }}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20'} ${!loading && totalItems === 0 && filter === 'news' ? 'animate-blink-attention' : ''}`}
                                     >
                                         <Clock className="w-4 h-4" /> Novedades
                                     </button>
@@ -497,7 +511,7 @@ export const Catalog = () => {
                                                             setPage(1);
                                                         }}
                                                         className={`group/card relative w-full h-full max-h-[140px] flex items-center gap-4 px-6 rounded-2xl transition-all duration-300 ${brandFilter === d.marca && rubroFilter === d.rubro 
-                                                            ? 'bg-primary-500 text-black shadow-2xl scale-95' 
+                                                            ? `bg-primary-500 text-black shadow-2xl scale-95 ${!loading && totalItems === 0 ? 'animate-blink-attention' : ''}` 
                                                             : 'bg-surface border border-white/5 shadow-xl'}`}
                                                     >
                                                         <div className={`p-2.5 rounded-xl transition-all duration-500 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'bg-black/10 scale-110' : 'bg-primary-500/10'}`}>
