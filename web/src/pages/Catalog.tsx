@@ -3,7 +3,7 @@ import { api } from '../lib/axios';
 import { formatPrice } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X, Calculator, ChevronDown, ChevronUp, ImagePlus, Upload, CheckCircle, Globe, Link2, ExternalLink } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Tag, Clock, Edit2, Edit3, Settings, Download, Info, LayoutGrid, List, X, Calculator, ChevronLeft, ChevronRight, ImagePlus, Upload, CheckCircle, Globe, Link2, ExternalLink } from 'lucide-react';
 import logoFallback from '../assets/logopriotti.png';
 
 interface Product {
@@ -20,6 +20,7 @@ interface Product {
     stock_status: 'red' | 'yellow' | 'green' | null;
     info?: string;
     oferta_descripcion?: string;
+    descuento_global?: number;
 }
 
 export const Catalog = () => {
@@ -27,6 +28,11 @@ export const Catalog = () => {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'offers' | 'news'>('all');
     const [brandFilter, setBrandFilter] = useState('');
+    const [rubroFilter, setRubroFilter] = useState('');
+    const [activeDiscounts, setActiveDiscounts] = useState<any[]>([]);
+    const [carouselIndex, setCarouselIndex] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(true);
+    const [isPaused, setIsPaused] = useState(false);
     const [availableBrands, setAvailableBrands] = useState<string[]>([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -36,7 +42,6 @@ export const Catalog = () => {
     const [editingProductInfo, setEditingProductInfo] = useState<Product | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'compact'>('compact');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [showMobileControls, setShowMobileControls] = useState(false);
     const [defaultImageProducts, setDefaultImageProducts] = useState<Set<string>>(new Set());
     const [uploadingProduct, setUploadingProduct] = useState<Product | null>(null);
     const [uploadTab, setUploadTab] = useState<'web' | 'file'>('web');
@@ -59,7 +64,6 @@ export const Catalog = () => {
     const [offerEditProduct, setOfferEditProduct] = useState<Product | null>(null);
     const [tempOfferPrice, setTempOfferPrice] = useState('');
     const [tempOfferDesc, setTempOfferDesc] = useState('');
-    const [showOfferCodes, setShowOfferCodes] = useState<Set<string>>(new Set());
     const [isScrolled, setIsScrolled] = useState(false);
 
     const { role, user } = useAuthStore();
@@ -75,6 +79,7 @@ export const Catalog = () => {
             if (search) params.append('search', search);
             if (filter !== 'all') params.append('filter', filter);
             if (brandFilter) params.append('marca', brandFilter);
+            if (rubroFilter) params.append('rubro', rubroFilter);
             params.append('page', (overridePage || page).toString());
             params.append('limit', '30');
 
@@ -95,7 +100,41 @@ export const Catalog = () => {
         } finally {
             if (showLoader) setLoading(false);
         }
-    }, [search, filter, brandFilter, page]);
+    }, [search, filter, brandFilter, rubroFilter, page]);
+
+    const fetchActiveDiscounts = useCallback(async () => {
+        try {
+            const { data } = await api.get('/discounts');
+            setActiveDiscounts(data.data);
+        } catch (error) {
+            console.error('Error fetching discounts');
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchActiveDiscounts();
+    }, [fetchActiveDiscounts]);
+
+    useEffect(() => {
+        if (activeDiscounts.length <= 1) return;
+        if ((brandFilter && rubroFilter) || isPaused) return;
+
+        const interval = setInterval(() => {
+            setIsTransitioning(true);
+            setCarouselIndex((prev) => prev + 1);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [activeDiscounts.length, brandFilter, rubroFilter, isPaused]);
+
+    const handleTransitionEnd = () => {
+        if (carouselIndex >= activeDiscounts.length) {
+            setIsTransitioning(false);
+            setCarouselIndex(0);
+        } else if (carouselIndex < 0) {
+            setIsTransitioning(false);
+            setCarouselIndex(activeDiscounts.length - 1);
+        }
+    };
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -308,18 +347,30 @@ export const Catalog = () => {
     };
 
     const handleAddToCart = (product: Product, quantity = 1) => {
-        const isShowingOffer = showOfferCodes.has(product.codigo);
-        const precio = isShowingOffer ? product.precio_oferta : product.precio_lista * coeficiente;
+        const normalPrice = product.precio_lista * coeficiente;
+        let finalPrice = normalPrice;
+
+        const isOriginalOffer = product.precio_oferta > 0;
+        const hasGlobalDiscount = !isOriginalOffer && (product.descuento_global || 0) > 0;
+
+        if (isOriginalOffer) {
+            finalPrice = product.precio_oferta;
+        } else if (hasGlobalDiscount) {
+            finalPrice = normalPrice * (1 - (product.descuento_global || 0) / 100);
+        }
+
         addItem({
             codigo: product.codigo,
             marca: product.marca,
             rubro: product.rubro,
             aplicacion: product.aplicacion,
-            precio: parseFloat(precio.toFixed(2)),
+            precio: parseFloat(finalPrice.toFixed(2)),
             cantidad: quantity,
             imagen: product.imagen
         });
     };
+
+
 
     const handleSaveOffer = async () => {
         if (!offerEditProduct) return;
@@ -330,10 +381,6 @@ export const Catalog = () => {
                 precio_oferta: newPrice,
                 oferta_descripcion: tempOfferDesc
             });
-            // If offer was removed, also remove from showing set
-            if (newPrice === 0) {
-                setShowOfferCodes(prev => { const next = new Set(prev); next.delete(offerEditProduct.codigo); return next; });
-            }
             setOfferEditProduct(null);
             await fetchProducts(false);
         } catch (error: any) {
@@ -341,67 +388,168 @@ export const Catalog = () => {
         }
     };
 
-    const toggleOfferDisplay = (codigo: string) => {
-        setShowOfferCodes(prev => {
-            const next = new Set(prev);
-            if (next.has(codigo)) next.delete(codigo);
-            else next.add(codigo);
-            return next;
-        });
-    };
 
     return (
         <div className="space-y-6 text-text-primary">
             {/* Header and Controls Container */}
-            <div className={`bg-surface rounded-2xl shadow-2xl border backdrop-blur-xl sticky top-[80px] z-30 ${isScrolled ? 'mx-4 py-1.5' : ''}`}>
-                {/* Always Visible Row: Search and Toggle */}
-                <div className={`flex flex-col md:flex-row gap-4 px-4 md:px-6 md:items-center ${isScrolled ? 'py-1' : 'py-4 md:py-6'}`}>
-                    <div className="flex items-center gap-4 flex-1">
-                        {/* Search Bar */}
-                        <div className="relative flex-1 group">
+            <div className={`bg-surface rounded-2xl shadow-2xl border backdrop-blur-xl sticky top-[80px] z-30 overflow-hidden transition-all duration-300 ${isScrolled ? 'mx-4' : ''}`}>
+                <div className={`flex flex-col lg:flex-row items-stretch ${isScrolled ? 'min-h-0' : 'min-h-[160px]'}`}>
+                    {/* Left Section: Search & Filters */}
+                    <div className={`p-4 lg:p-6 flex flex-col justify-center gap-4 bg-surface/30 min-w-0 transition-all duration-300 ${isScrolled ? 'w-full grow' : 'w-full lg:w-4/6 lg:border-r border-white/5'}`}>
+                        <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Search className="h-4 w-4 text-text-secondary group-focus-within:text-primary-500" />
+                                <Search className="h-5 w-5 text-text-secondary group-focus-within:text-primary-500" />
                             </div>
                             <input
                                 type="text"
-                                className={`block w-full pl-10 pr-4 bg-surface-darker border rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-text-primary placeholder-text-secondary/50 outline-none shadow-inner ${isScrolled ? 'py-2' : 'py-3'}`}
-                                placeholder="¿Qué estás buscando? (código, marca, rubro...)"
+                                className={`block w-full pl-12 pr-4 bg-white/95 border-2 border-primary-500/10 rounded-xl focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 text-base text-black placeholder-black/30 font-bold outline-none shadow-xl transition-all ${isScrolled ? 'py-2.5' : 'py-4'}`}
+                                placeholder="Búsqueda rápida de productos, marcas o rubros..."
                                 value={search}
-                                onChange={(e) => { setSearch(e.target.value); setBrandFilter(''); setPage(1); }}
+                                onChange={(e) => { setSearch(e.target.value); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
                             />
                         </div>
 
-                        {/* Expand Button (Mobile Only) - hide if scrolled to keep it clean */}
+                        {/* Condensed Filters Row */}
                         {!isScrolled && (
-                            <button
-                                onClick={() => setShowMobileControls(!showMobileControls)}
-                                className="md:hidden bg-primary-500 text-black p-3 rounded-xl shadow-lg active:scale-95 shrink-0"
-                                title={showMobileControls ? "Ocultar filtros" : "Más filtros"}
-                            >
-                                {showMobileControls ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                            </button>
+                            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+                                <div className="flex items-center bg-surface-darker/80 border border-white/5 rounded-xl px-4 py-2.5 text-xs font-black shrink-0">
+                                    <Calculator className="w-4 h-4 text-primary-500 mr-3" />
+                                    <span className="text-text-secondary mr-2">% MARGEN:</span>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={calcValue}
+                                        onChange={(e) => { setCalcValue(e.target.value); localStorage.setItem('priotti-calc-value', e.target.value); }}
+                                        className="w-12 bg-transparent border-none text-text-primary focus:ring-0 outline-none text-right font-black"
+                                    />
+                                </div>
+                                <div className="flex gap-1.5 h-10">
+                                    {user && role === 'admin' && (
+                                        <button
+                                            onClick={handleBulkUpdateThresholds}
+                                            className="px-3 rounded-xl transition-all bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/10"
+                                            title="Actualización por Bloque"
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => { setFilter('all'); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'all' && !brandFilter && !rubroFilter ? 'bg-primary-500 text-black shadow-lg' : 'bg-surface-darker/60 text-text-secondary hover:text-white'}`}
+                                    >
+                                        <Filter className="w-4 h-4" /> Todos
+                                    </button>
+                                    <button
+                                        onClick={() => { 
+                                            if (filter === 'offers') {
+                                                setFilter('all');
+                                            } else {
+                                                setFilter('offers'); setBrandFilter(''); setRubroFilter(''); 
+                                            }
+                                            setPage(1); 
+                                        }}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'} ${!loading && totalItems === 0 && filter === 'offers' ? 'animate-blink-attention' : ''}`}
+                                    >
+                                        <Tag className="w-4 h-4" /> Ofertas
+                                    </button>
+                                    <button
+                                        onClick={() => { 
+                                            if (filter === 'news') {
+                                                setFilter('all');
+                                            } else {
+                                                setFilter('news'); setBrandFilter(''); setRubroFilter(''); 
+                                            }
+                                            setPage(1); 
+                                        }}
+                                        className={`px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20'} ${!loading && totalItems === 0 && filter === 'news' ? 'animate-blink-attention' : ''}`}
+                                    >
+                                        <Clock className="w-4 h-4" /> Novedades
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={handleDownloadExcel}
+                                    className="px-4 h-10 bg-surface-darker/60 text-text-secondary hover:text-primary-500 rounded-xl transition-all border border-white/5 ml-auto flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                >
+                                    <Download className="w-4 h-4" /> Excel
+                                </button>
+                            </div>
                         )}
                     </div>
 
-                    {/* View Mode Toggle (Visible on desktop always) - shrink if scrolled */}
-                    <div className={`hidden md:flex items-center gap-4 ${isScrolled ? 'scale-90 opacity-80' : ''}`}>
-                        <div className="flex bg-surface-darker p-1 rounded-xl border border-white/10 shrink-0">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`rounded-lg ${isScrolled ? 'p-1.5' : 'p-2'} ${viewMode === 'grid' ? 'bg-primary-500 text-black shadow-lg' : 'text-text-secondary hover:text-white'}`}
-                                title="Vista Cuadrícula"
-                            >
-                                <LayoutGrid className={isScrolled ? "w-4 h-4" : "w-5 h-5"} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('compact')}
-                                className={`rounded-lg ${isScrolled ? 'p-1.5' : 'p-2'} ${viewMode === 'compact' ? 'bg-primary-500 text-black shadow-lg' : 'text-text-secondary hover:text-white'}`}
-                                title="Vista Compacta"
-                            >
-                                <List className={isScrolled ? "w-4 h-4" : "w-5 h-5"} />
-                            </button>
+                    {/* Right Section: Compact Carousel - Hidden if scrolled */}
+                    {!isScrolled && (
+                        <div className="w-full lg:w-2/6 bg-surface-darker/10 relative overflow-hidden group/carousel min-w-0">
+                            {activeDiscounts.length > 0 ? (
+                                <div 
+                                    className="h-full w-full relative"
+                                    onMouseEnter={() => setIsPaused(true)}
+                                    onMouseLeave={() => setIsPaused(false)}
+                                >
+                                    {/* Nav Buttons */}
+                                    <button 
+                                        onClick={() => { setIsTransitioning(true); setCarouselIndex(prev => prev - 1); }}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/40 hover:bg-black/80 text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all backdrop-blur-md border border-white/10"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+
+                                    <div className="h-full w-full overflow-hidden">
+                                        <div 
+                                            className={`h-full flex ${isTransitioning ? 'transition-transform duration-700 cubic-bezier(0.4, 0, 0.2, 1)' : ''}`}
+                                            style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+                                            onTransitionEnd={handleTransitionEnd}
+                                        >
+                                            {[...activeDiscounts, ...activeDiscounts.slice(0, 1)].map((d, idx) => (
+                                                <div key={`discount-${d.id || idx}-${idx}`} className="w-full min-w-full h-full flex-shrink-0 flex items-center justify-center p-3">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (brandFilter === d.marca && rubroFilter === d.rubro) {
+                                                                    setBrandFilter(''); setRubroFilter('');
+                                                                } else {
+                                                                    setBrandFilter(d.marca); setRubroFilter(d.rubro); setSearch(''); setFilter('all');
+                                                                }
+                                                                setPage(1);
+                                                            }}
+                                                            className={`group/card relative w-full h-full max-h-[140px] flex items-center gap-4 pl-6 pr-2 rounded-2xl transition-all duration-300 ${brandFilter === d.marca && rubroFilter === d.rubro 
+                                                                ? `bg-primary-500 text-black shadow-2xl scale-95 ${!loading && totalItems === 0 ? 'animate-blink-attention' : ''}` 
+                                                                : 'bg-surface border border-white/5 shadow-xl'}`}
+                                                        >
+                                                            <div className={`p-2.5 rounded-xl transition-all duration-500 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'bg-black/10 scale-110' : 'bg-primary-500/10'}`}>
+                                                                <Tag className={`w-6 h-6 ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black' : 'text-primary-500'}`} />
+                                                            </div>
+                                                            <div className="flex flex-col items-start text-left min-w-0 flex-1">
+                                                                <span className={`text-base font-black uppercase tracking-tighter ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black' : 'text-primary-500'}`}>DTO {d.porcentaje}%</span>
+                                                                <h4 className={`text-xs font-black uppercase tracking-widest truncate w-full ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black/80' : 'text-text-primary'}`}>{d.marca}</h4>
+                                                                <span className={`text-[9px] font-bold uppercase truncate w-full ${brandFilter === d.marca && rubroFilter === d.rubro ? 'text-black/60' : 'text-text-secondary'}`}>{d.rubro}</span>
+                                                            </div>
+                                                            <div className="w-32 h-32 flex-shrink-0 relative rounded-2xl overflow-hidden bg-black/10 border border-white/5">
+                                                                <img 
+                                                                    src={`${api.defaults.baseURL}/products/image/${encodeURIComponent((d.marca + '_' + d.rubro).replace(/[/ ]/g, (m) => m === '/' ? '-' : '_'))}`}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
+                                                                    onError={(e) => (e.currentTarget.parentElement ? e.currentTarget.parentElement.style.display = 'none' : null)}
+                                                                />
+                                                            </div>
+                                                        </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => { setIsTransitioning(true); setCarouselIndex(prev => prev + 1); }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/40 hover:bg-black/80 text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all backdrop-blur-md border border-white/10"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-text-secondary/10">
+                                    <Tag className="w-10 h-10" />
+                                </div>
+                            )}
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Brand Pills – hidden if scrolled */}
@@ -409,8 +557,8 @@ export const Catalog = () => {
                     <div className="px-4 pb-3 md:px-6 flex flex-wrap gap-2 items-center animate-in fade-in slide-in-from-top-1 duration-200">
                         <span className="text-[9px] font-black text-text-secondary uppercase tracking-widest shrink-0 mr-1">Marca:</span>
                         <button
-                            onClick={() => { setBrandFilter(''); setPage(1); }}
-                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${brandFilter === ''
+                            onClick={() => { setBrandFilter(''); setRubroFilter(''); setPage(1); }}
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${brandFilter === '' && rubroFilter === ''
                                     ? 'bg-primary-500 text-black border-primary-500 shadow-md'
                                     : 'bg-surface-darker text-text-secondary border hover:border-primary-500/50 hover:text-primary-500'
                                 }`}
@@ -420,7 +568,7 @@ export const Catalog = () => {
                         {availableBrands.map((brand) => (
                             <button
                                 key={brand}
-                                onClick={() => { setBrandFilter(brandFilter === brand ? '' : brand); setPage(1); }}
+                                onClick={() => { setBrandFilter(brandFilter === brand ? '' : brand); setRubroFilter(''); setPage(1); }}
                                 className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${brandFilter === brand
                                         ? 'bg-primary-500 text-black border-primary-500 shadow-md'
                                         : 'bg-surface-darker text-text-secondary border hover:border-primary-500/50 hover:text-primary-500'
@@ -429,110 +577,14 @@ export const Catalog = () => {
                                 {brand}
                             </button>
                         ))}
-                    </div>
-                )}
-
-                {/* Collapsible Section: Mode (on mobile), Calculator, Filters - hidden if scrolled */}
-                {!isScrolled && (
-                    <div className={`${showMobileControls ? 'block' : 'hidden'} md:block transition-all animate-in fade-in slide-in-from-top-1 duration-300`}>
-                        <div className="px-4 pb-6 md:px-6 md:pb-6 border-t md:border-t-0 border space-y-4 md:space-y-0 md:flex md:flex-row md:items-center md:gap-4">
-
-                            {/* View Mode (Mobile-only within collapse) */}
-                            <div className="md:hidden flex justify-between items-center py-2 border-b border">
-                                <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Modo de vista:</span>
-                                <div className="flex bg-surface-darker p-1 rounded-xl border border-white/10 shrink-0">
-                                    <button
-                                        onClick={() => setViewMode('grid')}
-                                        className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black' : 'text-text-secondary'}`}
-                                    >
-                                        <LayoutGrid className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => setViewMode('compact')}
-                                        className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black' : 'text-text-secondary'}`}
-                                    >
-                                        <List className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Price Calculator */}
-                            <div className="relative group/calc w-full md:w-auto">
-                                <div className="flex items-center bg-surface-darker border rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary-500/50 transition-all shadow-inner uppercase tracking-widest text-[10px] font-black">
-                                    <Calculator className="w-4 h-4 text-primary-500 mr-3 shrink-0" />
-                                    <span className="text-text-secondary mr-2 shrink-0">%:</span>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={calcValue}
-                                        onChange={(e) => {
-                                            setCalcValue(e.target.value);
-                                            localStorage.setItem('priotti-calc-value', e.target.value);
-                                        }}
-                                        className="flex-1 md:w-14 bg-transparent border-none text-sm font-black text-text-primary focus:ring-0 outline-none text-right placeholder-text-secondary/30"
-                                        placeholder="0.0"
-                                    />
-                                </div>
-                                {/* Tooltip explicativo */}
-                                <div className="absolute top-full mt-2 left-0 w-64 bg-surface border p-4 rounded-2xl text-[10px] font-bold text-text-secondary opacity-0 group-hover/calc:opacity-100 transition-all translate-y-2 group-hover/calc:translate-y-0 pointer-events-none z-50 shadow-2xl backdrop-blur-xl">
-                                    <p className="text-primary-500 uppercase tracking-widest mb-2 flex items-center">
-                                        <Info className="w-3.5 h-3.5 mr-2" /> ¿Cómo funciona?
-                                    </p>
-                                    <p className="mb-2 leading-relaxed">
-                                        Aplica un margen de ganancia o descuento temporal a los precios que ves en pantalla.
-                                    </p>
-                                    <div className="space-y-1 bg-surface-darker p-2 rounded-lg border">
-                                        <p><span className="text-white font-black">+ :</span> Aumenta precio.</p>
-                                        <p><span className="text-white font-black">- :</span> Aplica descuento.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Filters and Actions (User Only) */}
-                            {user && (
-                                <div className="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto items-center">
-                                    {role === 'admin' && (
-                                        <button
-                                            onClick={handleBulkUpdateThresholds}
-                                            className="p-3 md:px-5 md:py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center transition-all bg-primary-500/10 text-primary-500 hover:bg-primary-500/20 border border-primary-500/20"
-                                        >
-                                            <Settings className="w-4 h-4 md:mr-2" />
-                                            <span className="hidden md:inline">Bloque</span>
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => { setFilter('all'); setPage(1); }}
-                                        className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'all' ? 'bg-primary-500 text-black shadow-lg' : 'bg-muted text-text-secondary border border'}`}
-                                    >
-                                        <Filter className="w-4 h-4 md:mr-2" />
-                                        <span className="hidden md:inline">Todos</span>
-                                    </button>
-                                    <button
-                                        onClick={() => { setFilter('offers'); setPage(1); }}
-                                        className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'offers' ? 'bg-red-500 text-white shadow-lg' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}
-                                    >
-                                        <Tag className="w-4 h-4 md:mr-2" />
-                                        <span className="hidden md:inline">Ofertas</span>
-                                    </button>
-                                    <button
-                                        onClick={() => { setFilter('news'); setPage(1); }}
-                                        className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${filter === 'news' ? 'bg-green-500 text-white shadow-lg' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}
-                                    >
-                                        <Clock className="w-4 h-4 md:mr-2" />
-                                        <span className="hidden md:inline">Novedades</span>
-                                    </button>
-
-                                    <button
-                                        onClick={handleDownloadExcel}
-                                        title="Descargar Excel"
-                                        className="p-3 md:px-5 md:py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all bg-primary-500/10 text-primary-500 border border-primary-500/20"
-                                    >
-                                        <Download className="w-5 h-5 md:w-4 md:h-4 md:mr-2" />
-                                        <span className="hidden md:inline">Excel</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        {rubroFilter && (
+                             <div className="flex items-center gap-2 px-3 py-1 bg-primary-500/10 text-primary-500 border border-primary-500/30 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                <span>Rubro: {rubroFilter}</span>
+                                <button onClick={() => { setRubroFilter(''); setPage(1); }} className="hover:text-white transition-colors">
+                                    <X className="w-3 h-3" />
+                                </button>
+                             </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -540,7 +592,26 @@ export const Catalog = () => {
             {/* Grid */}
             {!loading && totalItems > 0 && (
                 <div className="flex justify-between items-center mb-2 text-[10px] font-black text-text-secondary px-2 uppercase tracking-widest">
-                    <span>{totalItems} resultados</span>
+                    <div className="flex items-center gap-4">
+                        <span>{totalItems} resultados</span>
+                        
+                        <div className="flex bg-surface-darker p-0.5 rounded-lg border border-white/5 shadow-inner scale-90">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-primary-500 text-black shadow-md' : 'text-text-secondary hover:text-white'}`}
+                                title="Vista Cuadrícula"
+                            >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('compact')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'compact' ? 'bg-primary-500 text-black shadow-md' : 'text-text-secondary hover:text-white'}`}
+                                title="Vista Compacta"
+                            >
+                                <List className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
                     <span>Pág {page} de {totalPages}</span>
                 </div>
             )}
@@ -559,16 +630,34 @@ export const Catalog = () => {
                     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     : "space-y-3"}>
                     {products.map((product) => {
-                        const isOffer = product.precio_oferta > 0;
-                        const isShowingOffer = showOfferCodes.has(product.codigo);
+                        const isOriginalOffer = product.precio_oferta > 0;
+                        const hasGlobalDiscount = !isOriginalOffer && (product.descuento_global || 0) > 0;
+                        
                         const markup = parseFloat(calcValue) || 0;
 
                         // Normal price with calculator
                         const normalPrice = (product.precio_lista * coeficiente) * (1 + markup / 100);
-                        // Offer price is FIXED
-                        const offerPrice = product.precio_oferta;
+                        
+                        // Pricing Logic
+                        let displayPrice = normalPrice;
+                        let strikedPrice = null;
+                        let offerDescription = product.oferta_descripcion;
+                        let showOfferBadge = isOriginalOffer; // Only show toggle badge for original/individual offers
 
-                        const finalPrice = isShowingOffer ? offerPrice : normalPrice;
+                        if (isOriginalOffer) {
+                            displayPrice = product.precio_oferta;
+                            strikedPrice = normalPrice;
+                        } else if (hasGlobalDiscount) {
+                            const discount = product.descuento_global || 0;
+                            displayPrice = normalPrice * (1 - discount / 100);
+                            strikedPrice = normalPrice;
+                            offerDescription = `DTO EXTRA ${discount}% ${product.marca} / ${product.rubro}`;
+                            showOfferBadge = false;
+                        } else if (markup !== 0) {
+                            strikedPrice = product.precio_lista * coeficiente;
+                        }
+
+                        const finalPrice = displayPrice;
                         const displayApp = product.aplicacion?.replace(/=/g, 'IDEM ') || '';
 
                         if (viewMode === 'compact') {
@@ -634,32 +723,27 @@ export const Catalog = () => {
                                                         </span>
                                                     </div>
                                                 )}
-                                                {isOffer && (
-                                                    <button
-                                                        onClick={() => toggleOfferDisplay(product.codigo)}
-                                                        className={`inline-flex items-center gap-1 border text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest transition-all ${isShowingOffer
-                                                                ? 'bg-red-500 text-white border-red-500 shadow-md scale-105'
-                                                                : 'bg-red-500/15 text-red-500 border-red-500/30 hover:bg-red-500/25'
-                                                            }`}
-                                                        title={isShowingOffer ? "Ver precio normal" : "Ver oferta"}
+                                                {showOfferBadge && (
+                                                    <div
+                                                        className="inline-flex items-center gap-1 border text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest bg-red-500 text-white border-red-500 shadow-md"
                                                     >
                                                         <Tag className="w-2.5 h-2.5" /> OFERTA
-                                                    </button>
+                                                    </div>
                                                 )}
 
-                                                {isShowingOffer && product.oferta_descripcion && (
-                                                    <span className="text-[10px] text-red-500/70 font-bold italic truncate max-w-[150px]" title={product.oferta_descripcion}>
-                                                        {product.oferta_descripcion}
+                                                {(isOriginalOffer || hasGlobalDiscount) && offerDescription && (
+                                                    <span className="text-[10px] text-red-500/70 font-bold italic truncate max-w-[150px]" title={offerDescription}>
+                                                        {offerDescription}
                                                     </span>
                                                 )}
 
                                                 <div className="flex items-baseline gap-2">
-                                                    {markup !== 0 && !isShowingOffer && (
-                                                        <span className="text-[10px] font-bold text-text-secondary tabular-nums">
-                                                            ${formatPrice(product.precio_lista * coeficiente)}
+                                                    {strikedPrice && (
+                                                        <span className="text-[10px] font-bold text-text-secondary tabular-nums line-through opacity-50">
+                                                            ${formatPrice(strikedPrice)}
                                                         </span>
                                                     )}
-                                                    <span className={`text-sm font-bold transition-colors duration-300 ${isShowingOffer ? 'text-red-500 scale-110' : 'text-primary-500'}`}>
+                                                    <span className={`text-sm font-bold transition-colors duration-300 ${(isOriginalOffer || hasGlobalDiscount) ? 'text-red-500 scale-110' : 'text-primary-500'}`}>
                                                         ${formatPrice(finalPrice)}
                                                     </span>
                                                 </div>
@@ -683,8 +767,8 @@ export const Catalog = () => {
                                                     setTempOfferPrice(product.precio_oferta > 0 ? String(product.precio_oferta) : '');
                                                     setTempOfferDesc(product.oferta_descripcion || '');
                                                 }}
-                                                className={`p-2 rounded-lg transition-all ${isOffer ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-muted text-text-secondary hover:bg-white/10 hover:text-red-400'}`}
-                                                title={isOffer ? 'Editar oferta' : 'Agregar oferta'}
+                                                className={`p-2 rounded-lg transition-all ${isOriginalOffer ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-muted text-text-secondary hover:bg-white/10 hover:text-red-400'}`}
+                                                title={isOriginalOffer ? 'Editar oferta' : 'Agregar oferta'}
                                             >
                                                 <Tag className="w-3.5 h-3.5" />
                                             </button>
@@ -704,18 +788,19 @@ export const Catalog = () => {
 
                         return (
                             <div key={product.codigo} className="bg-surface rounded-2xl shadow-xl border border hover:border-primary-500/50 transition-all duration-300 overflow-hidden flex flex-col relative group hover:-translate-y-1">
-                                {user && isOffer && (
-                                    <button
-                                        onClick={() => toggleOfferDisplay(product.codigo)}
-                                        className="absolute top-3 right-3 z-30"
-                                    >
-                                        <div className={`text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center uppercase tracking-widest transition-all ${isShowingOffer
-                                                ? 'bg-red-600 text-white border-2 border-white/20'
-                                                : 'bg-red-600/80 text-white hover:bg-red-600'
-                                            }`}>
-                                            <Tag className="w-2 h-2 mr-1" /> OFERTA {isShowingOffer ? 'ACTIVA' : ''}
+                                {user && showOfferBadge && (
+                                    <div className="absolute top-3 right-3 z-30">
+                                        <div className="bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center uppercase tracking-widest border-2 border-white/20">
+                                            <Tag className="w-2 h-2 mr-1" /> OFERTA
                                         </div>
-                                    </button>
+                                    </div>
+                                )}
+                                {user && hasGlobalDiscount && (
+                                    <div className="absolute top-3 right-3 z-30">
+                                        <div className="bg-amber-500 text-black text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center uppercase tracking-widest border border-amber-400/50">
+                                            <Tag className="w-2 h-2 mr-1" /> %{product.descuento_global} DTO
+                                        </div>
+                                    </div>
                                 )}
 
                                 {/* Product Image Container */}
@@ -842,21 +927,21 @@ export const Catalog = () => {
                                     <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between">
                                         <div className="flex flex-col">
                                             <div className="flex flex-col">
-                                                {markup !== 0 && !isShowingOffer && (
-                                                    <span className="text-[10px] font-bold text-text-secondary tabular-nums mb-0.5">
-                                                        Original: ${formatPrice(product.precio_lista * coeficiente)}
+                                                {strikedPrice && (
+                                                    <span className="text-[10px] font-bold text-text-secondary tabular-nums mb-0.5 line-through opacity-50">
+                                                        ${formatPrice(strikedPrice)}
                                                     </span>
                                                 )}
-                                                {isShowingOffer && product.oferta_descripcion && (
+                                                {(isOriginalOffer || hasGlobalDiscount) && offerDescription && (
                                                     <div className="bg-red-500/5 border border-red-500/10 rounded-lg p-2 mb-2 max-w-[200px]">
                                                         <p className="text-[10px] text-red-400 font-bold italic leading-tight">
-                                                            {product.oferta_descripcion}
+                                                            {offerDescription}
                                                         </p>
                                                     </div>
                                                 )}
                                                 <div className="flex items-baseline">
-                                                    <span className={`text-xs font-bold mr-1 ${isShowingOffer ? 'text-red-500' : 'text-primary-500/80'}`}>$</span>
-                                                    <span className={`text-2xl font-bold tracking-tighter transition-all duration-300 ${isShowingOffer ? 'text-red-500 scale-105 origin-left' : 'text-primary-500'}`}>
+                                                    <span className={`text-xs font-bold mr-1 ${(isOriginalOffer || hasGlobalDiscount) ? 'text-red-500' : 'text-primary-500/80'}`}>$</span>
+                                                    <span className={`text-2xl font-bold tracking-tighter transition-all duration-300 ${(isOriginalOffer || hasGlobalDiscount) ? 'text-red-500 scale-105 origin-left' : 'text-primary-500'}`}>
                                                         {formatPrice(finalPrice)}
                                                     </span>
                                                 </div>
@@ -879,8 +964,8 @@ export const Catalog = () => {
                                                     setTempOfferPrice(product.precio_oferta > 0 ? String(product.precio_oferta) : '');
                                                     setTempOfferDesc(product.oferta_descripcion || '');
                                                 }}
-                                                className={`p-3 rounded-xl transition-all ${isOffer ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/30' : 'bg-muted text-text-secondary hover:bg-white/10 border border'}`}
-                                                title={isOffer ? 'Editar precio de oferta' : 'Agregar precio de oferta'}
+                                                className={`p-3 rounded-xl transition-all ${isOriginalOffer ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/30' : 'bg-muted text-text-secondary hover:bg-white/10 border border'}`}
+                                                title={isOriginalOffer ? 'Editar precio de oferta' : 'Agregar precio de oferta'}
                                             >
                                                 <Tag className="w-4 h-4" />
                                             </button>

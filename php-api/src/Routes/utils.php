@@ -101,11 +101,19 @@ $app->get('/api/config', function (Request $request, Response $response) {
     try {
         $db = Database::getConnection();
         
-        // Ensure table exists
+        // Ensure tables exist
         $db->exec("CREATE TABLE IF NOT EXISTS config (
             `key` VARCHAR(100) PRIMARY KEY,
             `value` TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+
+        $db->exec("CREATE TABLE IF NOT EXISTS global_discounts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            marca VARCHAR(255) NOT NULL,
+            rubro VARCHAR(255) NOT NULL,
+            porcentaje DECIMAL(10, 2) NOT NULL,
+            UNIQUE KEY (marca, rubro)
         )");
 
         $stmt = $db->query("SELECT `key`, `value` FROM config");
@@ -140,6 +148,116 @@ $app->post('/api/config', function (Request $request, Response $response) {
         $stmt->execute([$key, $value, $value]);
 
         $response->getBody()->write(json_encode(['message' => 'Config updated']));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+// --- Global Discounts Endpoints ---
+
+$app->get('/api/discounts', function (Request $request, Response $response) {
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->query("SELECT * FROM global_discounts ORDER BY marca ASC, rubro ASC");
+        $discounts = $stmt->fetchAll();
+
+        $response->getBody()->write(json_encode(['data' => $discounts]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware());
+
+
+$app->post('/api/discounts', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+    $marca = $data['marca'] ?? '';
+    $rubro = $data['rubro'] ?? '';
+    $porcentaje = isset($data['porcentaje']) ? (float) $data['porcentaje'] : 0;
+
+    if (empty($marca) || empty($rubro)) {
+        $response->getBody()->write(json_encode(['error' => 'Marca y Rubro son requeridos']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("INSERT INTO global_discounts (marca, rubro, porcentaje) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE porcentaje = ?");
+        $stmt->execute([$marca, $rubro, $porcentaje, $porcentaje]);
+
+        $response->getBody()->write(json_encode(['message' => 'Descuento actualizado correctamente']));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+$app->delete('/api/discounts/{id}', function (Request $request, Response $response, $args) {
+    $id = $args['id'];
+
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("DELETE FROM global_discounts WHERE id = ?");
+        $stmt->execute([$id]);
+
+        $response->getBody()->write(json_encode(['message' => 'Descuento eliminado']));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+// Helper function to resolve images path (mirrored from products.php)
+if (!function_exists('resolveImagesPath')) {
+    function resolveImagesPath(): string
+    {
+        $configured = trim($_ENV['PRODUCTS_IMAGES_PATH'] ?? 'Resources/fotos');
+        if (str_starts_with($configured, '/')) return $configured;
+        $projectRoot = realpath(__DIR__ . '/../../../') ?: dirname(__DIR__, 3);
+        return rtrim($projectRoot, '/') . '/' . ltrim($configured, '/');
+    }
+}
+
+$app->post('/api/discounts/image', function (Request $request, Response $response) {
+    $uploadedFiles = $request->getUploadedFiles();
+    $data = $request->getParsedBody();
+    $marca = $data['marca'] ?? '';
+    $rubro = $data['rubro'] ?? '';
+
+    if (empty($uploadedFiles['image']) || empty($marca) || empty($rubro)) {
+        $response->getBody()->write(json_encode(['error' => 'Falta imagen, marca o rubro']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    $uploadedFile = $uploadedFiles['image'];
+    if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+        $response->getBody()->write(json_encode(['error' => 'Error al subir el archivo']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $baseFilename = str_replace(['/', ' '], ['-', '_'], $marca . '_' . $rubro);
+        $basePath = resolveImagesPath();
+        
+        if (!is_dir($basePath)) mkdir($basePath, 0775, true);
+
+        // Remove existing
+        $existing = glob(rtrim($basePath, '/') . '/' . $baseFilename . '.*');
+        if ($existing) { foreach ($existing as $old) @unlink($old); }
+
+        $extMap = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        $ext = $extMap[$uploadedFile->getClientMediaType()] ?? 'jpg';
+        
+        $newFilename = $baseFilename . '.' . $ext;
+        $destPath = rtrim($basePath, '/') . '/' . $newFilename;
+        $uploadedFile->moveTo($destPath);
+
+        $response->getBody()->write(json_encode(['message' => 'Imagen de promo subida!', 'filename' => $newFilename]));
         return $response->withHeader('Content-Type', 'application/json');
     } catch (\Exception $e) {
         $response->getBody()->write(json_encode(['error' => $e->getMessage()]));

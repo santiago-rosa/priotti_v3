@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../lib/axios';
-import { Users, TrendingUp, Activity, Award } from 'lucide-react';
+import { Users, TrendingUp, Activity, Award, Tag, Plus, Trash2, Settings as SettingsIcon, ImagePlus } from 'lucide-react';
 
 interface Stats {
     orders30d: number;
     activeClients30d: number;
     totalClients: number;
     topClients: { nombre: string; total_pedidos: number }[];
+}
+
+interface GlobalDiscount {
+    id: number;
+    marca: string;
+    rubro: string;
+    porcentaje: number;
 }
 
 export const AdminImport = () => {
@@ -19,11 +26,81 @@ export const AdminImport = () => {
     // Stats
     const [stats, setStats] = useState<Stats | null>(null);
 
+    // Global Discounts
+    const [brands, setBrands] = useState<string[]>([]);
+    const [rubros, setRubros] = useState<string[]>([]);
+    const [discounts, setDiscounts] = useState<GlobalDiscount[]>([]);
+    const [newDiscount, setNewDiscount] = useState({ marca: '', rubro: '', porcentaje: '' });
+    const [isSavingDiscount, setIsSavingDiscount] = useState(false);
+
     useEffect(() => {
         fetchStatus();
         fetchConfig();
         fetchStats();
+        fetchDiscountsBase();
     }, []);
+
+    useEffect(() => {
+        if (newDiscount.marca) {
+            fetchRubrosForBrand(newDiscount.marca);
+        } else {
+            setRubros([]);
+        }
+        setNewDiscount(prev => ({ ...prev, rubro: '' }));
+    }, [newDiscount.marca]);
+
+    const fetchDiscountsBase = async () => {
+        try {
+            const [bRes, dRes] = await Promise.all([
+                api.get('/products/brands'),
+                api.get('/discounts')
+            ]);
+            setBrands(bRes.data.data);
+            setDiscounts(dRes.data.data);
+        } catch (error) {
+            console.error('Error fetching base discounts data');
+        }
+    };
+
+    const fetchRubrosForBrand = async (marca: string) => {
+        try {
+            const { data } = await api.get(`/products/rubros?marca=${encodeURIComponent(marca)}`);
+            setRubros(data.data);
+        } catch (error) {
+            console.error('Error fetching rubros for brand');
+        }
+    };
+
+    const handleSaveDiscount = async () => {
+        if (!newDiscount.marca || !newDiscount.rubro || !newDiscount.porcentaje) {
+            alert('Por favor complete todos los campos');
+            return;
+        }
+        setIsSavingDiscount(true);
+        try {
+            await api.post('/discounts', {
+                marca: newDiscount.marca,
+                rubro: newDiscount.rubro,
+                porcentaje: parseFloat(newDiscount.porcentaje)
+            });
+            setNewDiscount({ marca: '', rubro: '', porcentaje: '' });
+            await fetchDiscountsBase();
+        } catch (error) {
+            alert('Error al guardar el descuento');
+        } finally {
+            setIsSavingDiscount(false);
+        }
+    };
+
+    const handleDeleteDiscount = async (id: number) => {
+        if (!confirm('¿Está seguro de eliminar este descuento?')) return;
+        try {
+            await api.delete(`/discounts/${id}`);
+            await fetchDiscountsBase();
+        } catch (error) {
+            alert('Error al eliminar');
+        }
+    };
 
     const fetchConfig = async () => {
         try {
@@ -150,7 +227,7 @@ export const AdminImport = () => {
                 )}
 
                 {/* Settings Card */}
-                <div className="md:col-span-2">
+                <div className="md:col-span-1">
                     <div className="bg-surface p-8 rounded-2xl shadow-2xl border border-white/5 relative overflow-hidden group h-full">
                         <div className="absolute top-0 left-0 w-full h-1 bg-primary-500 shadow-[0_0_15px_rgba(255,184,0,0.5)]"></div>
                         <h2 className="text-lg font-black text-white mb-6 flex items-center uppercase tracking-widest">
@@ -179,14 +256,108 @@ export const AdminImport = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Discounts Card */}
+                <div className="md:col-span-1">
+                    <div className="bg-surface p-8 rounded-2xl shadow-2xl border border-white/5 relative overflow-hidden group h-full">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
+                        <h2 className="text-lg font-black text-white mb-6 flex items-center uppercase tracking-widest">
+                            <Tag className="w-5 h-5 text-amber-500 mr-3" />
+                            Ofertas Globales
+                        </h2>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 gap-3">
+                                <select 
+                                    value={newDiscount.marca}
+                                    onChange={(e) => setNewDiscount(prev => ({ ...prev, marca: e.target.value }))}
+                                    className="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-amber-500 outline-none transition-colors"
+                                >
+                                    <option value="">Seleccionar Marca...</option>
+                                    {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                                </select>
+                                <select 
+                                    value={newDiscount.rubro}
+                                    onChange={(e) => setNewDiscount(prev => ({ ...prev, rubro: e.target.value }))}
+                                    className="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-amber-500 outline-none transition-colors"
+                                >
+                                    <option value="">Seleccionar Rubro...</option>
+                                    {rubros.map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="number"
+                                        placeholder="% Dto"
+                                        value={newDiscount.porcentaje}
+                                        onChange={(e) => setNewDiscount(prev => ({ ...prev, porcentaje: e.target.value }))}
+                                        className="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-amber-500 outline-none transition-colors w-full"
+                                    />
+                                    <button 
+                                        onClick={handleSaveDiscount}
+                                        disabled={isSavingDiscount}
+                                        className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black font-black p-2 rounded-xl transition-all"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                                {discounts.length === 0 ? (
+                                    <p className="text-[10px] text-gray-500 italic text-center py-4">No hay descuentos globales configurados</p>
+                                ) : (
+                                    discounts.map(d => (
+                                        <div key={d.id} className="flex items-center justify-between bg-black/20 p-3 rounded-xl border border-white/5 text-xs group/item">
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-amber-500 uppercase tracking-tighter">{d.porcentaje}% OFF</span>
+                                                <span className="text-gray-400 font-medium">{d.marca} › {d.rubro}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button 
+                                                    onClick={() => {
+                                                        const input = document.createElement('input');
+                                                        input.type = 'file';
+                                                        input.accept = 'image/*';
+                                                        input.onchange = async (e: any) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            const formData = new FormData();
+                                                            formData.append('image', file);
+                                                            formData.append('marca', d.marca);
+                                                            formData.append('rubro', d.rubro);
+                                                            try {
+                                                                await api.post('/discounts/image', formData, {
+                                                                    headers: { 'Content-Type': 'multipart/form-data' }
+                                                                });
+                                                                alert('Imagen de promo subida con éxito!');
+                                                            } catch (err) {
+                                                                alert('Error al subir imagen');
+                                                            }
+                                                        };
+                                                        input.click();
+                                                    }}
+                                                    className="text-gray-600 hover:text-amber-500 p-2 transition-colors opacity-0 group-hover/item:opacity-100"
+                                                    title="Subir imagen de promo"
+                                                >
+                                                    <ImagePlus className="w-4 h-4" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDeleteDiscount(d.id)}
+                                                    className="text-gray-600 hover:text-red-500 p-2 transition-colors opacity-0 group-hover/item:opacity-100"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
 };
 
-const SettingsIcon = (props: any) => (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-    </svg>
-);
+export default AdminImport;

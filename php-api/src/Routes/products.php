@@ -79,10 +79,20 @@ $app->get('/api/products', function (Request $request, Response $response) {
             $brands = $brandsStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
-        // Apply brand filter AFTER collecting pills
+        $marca = $queryParams['marca'] ?? '';   // optional brand filter (pills)
+        $rubro = $queryParams['rubro'] ?? '';   // optional category filter
+
+        // ...
+
+        // Apply filters AFTER collecting pills
         if (!empty($marca)) {
             $whereSql .= " AND marca = ?";
             $params[] = $marca;
+        }
+
+        if (!empty($rubro)) {
+            $whereSql .= " AND rubro = ?";
+            $params[] = $rubro;
         }
 
         // Count Query
@@ -114,6 +124,13 @@ $app->get('/api/products', function (Request $request, Response $response) {
         $stmt->execute($params);
         $products = $stmt->fetchAll();
 
+        // Fetch Global Discounts
+        $gdStmt = $db->query("SELECT marca, rubro, porcentaje FROM global_discounts");
+        $globalDiscounts = [];
+        foreach ($gdStmt->fetchAll() as $gd) {
+            $globalDiscounts[$gd['marca']][$gd['rubro']] = (float) $gd['porcentaje'];
+        }
+
         $coeficiente = 1.0;
         if ($user) {
             $porcentaje = 0.0;
@@ -137,6 +154,7 @@ $app->get('/api/products', function (Request $request, Response $response) {
                 $p['stock_low'] = 0;
                 $p['stock_medium'] = 0;
                 $p['stock_status'] = null;
+                $p['descuento_global'] = 0;
             } else {
                 // If not admin and config is off, hide stock status
                 if (!$isAdmin && !$showStockToClients) {
@@ -147,6 +165,16 @@ $app->get('/api/products', function (Request $request, Response $response) {
                 $p['precio_oferta'] = (float) $p['precio_oferta'];
                 $p['vigente'] = (int) $p['vigente'];
                 $p['stock'] = (int) ($p['stock'] ?? 0);
+
+                // Apply global discount if no item offer exists
+                $p['descuento_global'] = 0;
+                if ($p['precio_oferta'] <= 0) {
+                    $m = $p['marca'];
+                    $r = $p['rubro'];
+                    if (isset($globalDiscounts[$m][$r])) {
+                        $p['descuento_global'] = $globalDiscounts[$m][$r];
+                    }
+                }
             }
         }
 
@@ -181,6 +209,36 @@ $app->get('/api/products/brands', function (Request $request, Response $response
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 })->add(new AuthMiddleware('admin'));
+
+$app->get('/api/products/rubros', function (Request $request, Response $response) {
+    try {
+        $queryParams = $request->getQueryParams();
+        $marca = $queryParams['marca'] ?? '';
+
+        $db = Database::getConnection();
+        $sql = "SELECT DISTINCT rubro FROM productos WHERE vigente = 1 AND rubro IS NOT NULL AND rubro != ''";
+        $params = [];
+
+        if (!empty($marca)) {
+            $sql .= " AND marca = ?";
+            $params[] = $marca;
+        }
+
+        $sql .= " ORDER BY rubro ASC";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $rubros = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $response->getBody()->write(json_encode(['data' => $rubros]));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware('admin'));
+
+
 
 $app->put('/api/products/bulk/thresholds', function (Request $request, Response $response) {
     $data = $request->getParsedBody();
@@ -231,6 +289,13 @@ $app->post('/api/products/list', function (Request $request, Response $response)
         $stmt->execute($codigos);
         $products = $stmt->fetchAll();
 
+        // Fetch Global Discounts
+        $gdStmt = $db->query("SELECT marca, rubro, porcentaje FROM global_discounts");
+        $globalDiscounts = [];
+        foreach ($gdStmt->fetchAll() as $gd) {
+            $globalDiscounts[$gd['marca']][$gd['rubro']] = (float) $gd['porcentaje'];
+        }
+
         $user = $request->getAttribute('user');
         $coeficiente = 1.0;
         if ($user) {
@@ -249,6 +314,16 @@ $app->post('/api/products/list', function (Request $request, Response $response)
             $p['precio_lista'] = (float) $p['precio_lista'] * $coeficiente;
             $p['precio_oferta'] = (float) $p['precio_oferta'];
             $p['stock'] = (int) ($p['stock'] ?? 0);
+
+            // Apply global discount if no item offer exists
+            $p['descuento_global'] = 0;
+            if ($p['precio_oferta'] <= 0) {
+                $m = $p['marca'];
+                $r = $p['rubro'];
+                if (isset($globalDiscounts[$m][$r])) {
+                    $p['descuento_global'] = $globalDiscounts[$m][$r];
+                }
+            }
         }
 
         $response->getBody()->write(json_encode(['data' => $products]));
