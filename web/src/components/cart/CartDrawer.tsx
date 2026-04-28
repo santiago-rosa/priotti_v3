@@ -43,7 +43,7 @@ export const CartDrawer = () => {
             message += `*Detalle:*\n`;
             
             items.forEach(item => {
-                message += `- ${item.cantidad}x ${item.aplicacion} [${item.codigo}] ($${formatPrice(item.precio)})\n`;
+                message += `- ${item.cantidad}x [${item.codigo}] ${item.rubro} ($${formatPrice(item.precio)})\n`;
             });
             
             message += `\n*TOTAL: $${formatPrice(total)}*\n\n`;

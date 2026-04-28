@@ -65,6 +65,36 @@ export const Catalog = () => {
     const [tempOfferPrice, setTempOfferPrice] = useState('');
     const [tempOfferDesc, setTempOfferDesc] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
+    const [quantities, setQuantities] = useState<Record<string, number | string>>({});
+
+    const handleQuantityChange = (codigo: string, delta: number) => {
+        setQuantities(prev => {
+            const current = typeof prev[codigo] === 'number' ? (prev[codigo] as number) : 1;
+            const next = Math.max(1, current + delta);
+            return { ...prev, [codigo]: next };
+        });
+    };
+
+    const handleQuantityInput = (codigo: string, value: string) => {
+        if (value === '') {
+            setQuantities(prev => ({ ...prev, [codigo]: '' }));
+            return;
+        }
+        const val = parseInt(value, 10);
+        if (!isNaN(val) && val >= 0) {
+            setQuantities(prev => ({ ...prev, [codigo]: val }));
+        }
+    };
+
+    const handleQuantityBlur = (codigo: string) => {
+        setQuantities(prev => {
+            const val = prev[codigo];
+            if (val === '' || (typeof val === 'number' && val < 1)) {
+                return { ...prev, [codigo]: 1 };
+            }
+            return prev;
+        });
+    };
 
     const { role, user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
@@ -790,12 +820,40 @@ export const Catalog = () => {
                                             </button>
                                         )}
                                         {role === 'client' && (
-                                            <button
-                                                onClick={() => handleAddToCart(product)}
-                                                className="p-2 bg-primary-500 text-black rounded-lg hover:bg-primary-400 transition-all shadow-lg active:scale-95"
-                                            >
-                                                <ShoppingCart className="w-3.5 h-3.5 stroke-[2.5]" />
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center bg-surface-darker rounded-lg border border-white/10 p-0.5 shadow-sm">
+                                                    <button
+                                                        onClick={() => handleQuantityChange(product.codigo, -1)}
+                                                        className="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 rounded-md transition-colors font-bold"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={quantities[product.codigo] ?? 1}
+                                                        onChange={(e) => handleQuantityInput(product.codigo, e.target.value)}
+                                                        onBlur={() => handleQuantityBlur(product.codigo)}
+                                                        className="w-10 text-center bg-transparent text-sm font-bold text-text-primary border-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleQuantityChange(product.codigo, 1)}
+                                                        className="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 rounded-md transition-colors font-bold"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const qty = quantities[product.codigo];
+                                                        handleAddToCart(product, typeof qty === 'number' ? qty : 1);
+                                                    }}
+                                                    className="p-2 bg-primary-500 text-black rounded-lg hover:bg-primary-400 transition-all shadow-lg active:scale-95"
+                                                    title="Agregar al carrito"
+                                                >
+                                                    <ShoppingCart className="w-3.5 h-3.5 stroke-[2.5]" />
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -940,8 +998,8 @@ export const Catalog = () => {
                                 </div>
 
                                 {user && (
-                                    <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between">
-                                        <div className="flex flex-col">
+                                    <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between flex-wrap gap-y-3">
+                                        <div className="flex flex-col min-w-0 pr-1">
                                             <div className="flex flex-col">
                                                 {(hasDiscount || hasMargin) && (
                                                     <span className="text-base font-bold text-text-secondary tabular-nums mb-0.5 line-through opacity-50">
@@ -971,7 +1029,7 @@ export const Catalog = () => {
                                                 
                                                 <div className="flex items-baseline">
                                                     <span className={`text-sm font-bold mr-1 ${hasDiscount ? 'text-red-500' : 'text-primary-500/80'}`}>$</span>
-                                                    <span className={`text-3xl font-bold tracking-tighter transition-all duration-300 ${hasDiscount ? 'text-red-500 scale-105 origin-left' : 'text-primary-500'}`}>
+                                                    <span className={`text-2xl font-bold tracking-tighter transition-all duration-300 ${hasDiscount ? 'text-red-500 scale-105 origin-left' : 'text-primary-500'}`}>
                                                         {formatPrice(hasDiscount ? discountedPrice : (hasMargin ? marginPrice : basePrice))}
                                                     </span>
                                                 </div>
@@ -979,13 +1037,40 @@ export const Catalog = () => {
                                         </div>
 
                                         {role === 'client' && (
-                                            <button
-                                                onClick={() => handleAddToCart(product)}
-                                                className="bg-primary-500 hover:bg-primary-400 text-black p-3 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn"
-                                                aria-label="Agregar al carrito"
-                                            >
-                                                <ShoppingCart className="w-5 h-5 stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
-                                            </button>
+                                            <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                                                <div className="flex items-center bg-surface-darker rounded-lg border border-white/10 h-10 shadow-sm">
+                                                    <button
+                                                        onClick={() => handleQuantityChange(product.codigo, -1)}
+                                                        className="w-8 h-full flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 rounded-l-lg transition-colors font-bold text-base"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={quantities[product.codigo] ?? 1}
+                                                        onChange={(e) => handleQuantityInput(product.codigo, e.target.value)}
+                                                        onBlur={() => handleQuantityBlur(product.codigo)}
+                                                        className="w-8 text-center bg-transparent text-sm font-bold text-text-primary border-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleQuantityChange(product.codigo, 1)}
+                                                        className="w-8 h-full flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 rounded-r-lg transition-colors font-bold text-base"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const qty = quantities[product.codigo];
+                                                        handleAddToCart(product, typeof qty === 'number' ? qty : 1);
+                                                    }}
+                                                    className="bg-primary-500 hover:bg-primary-400 text-black px-3 py-2 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn h-10 flex items-center justify-center"
+                                                    aria-label="Agregar al carrito"
+                                                >
+                                                    <ShoppingCart className="w-4 h-4 stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
+                                                </button>
+                                            </div>
                                         )}
                                         {role === 'admin' && (
                                             <button
