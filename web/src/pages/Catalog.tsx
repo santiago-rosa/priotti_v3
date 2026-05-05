@@ -65,9 +65,41 @@ export const Catalog = () => {
     const [tempOfferPrice, setTempOfferPrice] = useState('');
     const [tempOfferDesc, setTempOfferDesc] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
+    const [quantities, setQuantities] = useState<Record<string, number | string>>({});
+    const [cartConfirm, setCartConfirm] = useState<{product: Product, quantity: number, existingQuantity: number} | null>(null);
+
+    const handleQuantityChange = (codigo: string, delta: number) => {
+        setQuantities(prev => {
+            const current = typeof prev[codigo] === 'number' ? (prev[codigo] as number) : 1;
+            const next = Math.max(1, current + delta);
+            return { ...prev, [codigo]: next };
+        });
+    };
+
+    const handleQuantityInput = (codigo: string, value: string) => {
+        if (value === '') {
+            setQuantities(prev => ({ ...prev, [codigo]: '' }));
+            return;
+        }
+        const val = parseInt(value, 10);
+        if (!isNaN(val) && val >= 0) {
+            setQuantities(prev => ({ ...prev, [codigo]: val }));
+        }
+    };
+
+    const handleQuantityBlur = (codigo: string) => {
+        setQuantities(prev => {
+            const val = prev[codigo];
+            if (val === '' || (typeof val === 'number' && val < 1)) {
+                return { ...prev, [codigo]: 1 };
+            }
+            return prev;
+        });
+    };
 
     const { role, user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
+    const cartItems = useCartStore((state) => state.items);
 
     // coeficiente is now applied by the backend API to prevent exposing base list prices
     const coeficiente = 1;
@@ -346,7 +378,15 @@ export const Catalog = () => {
         }
     };
 
-    const handleAddToCart = (product: Product, quantity = 1) => {
+    const handleAddToCart = (product: Product, quantity = 1, skipConfirm = false) => {
+        if (!skipConfirm) {
+            const existingItem = cartItems.find(item => item.codigo === product.codigo);
+            if (existingItem) {
+                setCartConfirm({ product, quantity, existingQuantity: existingItem.cantidad });
+                return;
+            }
+        }
+
         const normalPrice = product.precio_lista * coeficiente;
         let finalPrice = normalPrice;
 
@@ -790,12 +830,40 @@ export const Catalog = () => {
                                             </button>
                                         )}
                                         {role === 'client' && (
-                                            <button
-                                                onClick={() => handleAddToCart(product)}
-                                                className="p-2 bg-primary-500 text-black rounded-lg hover:bg-primary-400 transition-all shadow-lg active:scale-95"
-                                            >
-                                                <ShoppingCart className="w-3.5 h-3.5 stroke-[2.5]" />
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center bg-surface-darker rounded-lg border border-white/10 p-0.5 shadow-sm">
+                                                    <button
+                                                        onClick={() => handleQuantityChange(product.codigo, -1)}
+                                                        className="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 rounded-md transition-colors font-bold"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={quantities[product.codigo] ?? 1}
+                                                        onChange={(e) => handleQuantityInput(product.codigo, e.target.value)}
+                                                        onBlur={() => handleQuantityBlur(product.codigo)}
+                                                        className="w-10 text-center bg-transparent text-sm font-bold text-text-primary border-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleQuantityChange(product.codigo, 1)}
+                                                        className="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 rounded-md transition-colors font-bold"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const qty = quantities[product.codigo];
+                                                        handleAddToCart(product, typeof qty === 'number' ? qty : 1);
+                                                    }}
+                                                    className="p-2 bg-primary-500 text-black rounded-lg hover:bg-primary-400 transition-all shadow-lg active:scale-95"
+                                                    title="Agregar al carrito"
+                                                >
+                                                    <ShoppingCart className="w-3.5 h-3.5 stroke-[2.5]" />
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -940,8 +1008,8 @@ export const Catalog = () => {
                                 </div>
 
                                 {user && (
-                                    <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between">
-                                        <div className="flex flex-col">
+                                    <div className="px-5 pb-5 pt-0 mt-auto flex items-end justify-between flex-wrap gap-y-3">
+                                        <div className="flex flex-col min-w-0 pr-1">
                                             <div className="flex flex-col">
                                                 {(hasDiscount || hasMargin) && (
                                                     <span className="text-base font-bold text-text-secondary tabular-nums mb-0.5 line-through opacity-50">
@@ -971,7 +1039,7 @@ export const Catalog = () => {
                                                 
                                                 <div className="flex items-baseline">
                                                     <span className={`text-sm font-bold mr-1 ${hasDiscount ? 'text-red-500' : 'text-primary-500/80'}`}>$</span>
-                                                    <span className={`text-3xl font-bold tracking-tighter transition-all duration-300 ${hasDiscount ? 'text-red-500 scale-105 origin-left' : 'text-primary-500'}`}>
+                                                    <span className={`text-2xl font-bold tracking-tighter transition-all duration-300 ${hasDiscount ? 'text-red-500 scale-105 origin-left' : 'text-primary-500'}`}>
                                                         {formatPrice(hasDiscount ? discountedPrice : (hasMargin ? marginPrice : basePrice))}
                                                     </span>
                                                 </div>
@@ -979,13 +1047,40 @@ export const Catalog = () => {
                                         </div>
 
                                         {role === 'client' && (
-                                            <button
-                                                onClick={() => handleAddToCart(product)}
-                                                className="bg-primary-500 hover:bg-primary-400 text-black p-3 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn"
-                                                aria-label="Agregar al carrito"
-                                            >
-                                                <ShoppingCart className="w-5 h-5 stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
-                                            </button>
+                                            <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                                                <div className="flex items-center bg-surface-darker rounded-lg border border-white/10 h-10 shadow-sm">
+                                                    <button
+                                                        onClick={() => handleQuantityChange(product.codigo, -1)}
+                                                        className="w-8 h-full flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 rounded-l-lg transition-colors font-bold text-base"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={quantities[product.codigo] ?? 1}
+                                                        onChange={(e) => handleQuantityInput(product.codigo, e.target.value)}
+                                                        onBlur={() => handleQuantityBlur(product.codigo)}
+                                                        className="w-8 text-center bg-transparent text-sm font-bold text-text-primary border-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleQuantityChange(product.codigo, 1)}
+                                                        className="w-8 h-full flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 rounded-r-lg transition-colors font-bold text-base"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const qty = quantities[product.codigo];
+                                                        handleAddToCart(product, typeof qty === 'number' ? qty : 1);
+                                                    }}
+                                                    className="bg-primary-500 hover:bg-primary-400 text-black px-3 py-2 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn h-10 flex items-center justify-center"
+                                                    aria-label="Agregar al carrito"
+                                                >
+                                                    <ShoppingCart className="w-4 h-4 stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
+                                                </button>
+                                            </div>
                                         )}
                                         {role === 'admin' && (
                                             <button
@@ -1465,6 +1560,54 @@ export const Catalog = () => {
                                     Guardar
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal: Confirmación de Carrito */}
+            {cartConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setCartConfirm(null)} />
+                    <div className="relative bg-surface border border-primary-500/20 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+                        <div className="bg-gradient-to-r from-primary-500/20 to-transparent p-6 border-b border-primary-500/10">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-xl font-bold text-text-primary tracking-tight flex items-center gap-2">
+                                        <ShoppingCart className="w-5 h-5 text-primary-500" />
+                                        Ítem ya en el pedido
+                                    </h3>
+                                </div>
+                                <button onClick={() => setCartConfirm(null)} className="p-2 hover:bg-white/10 rounded-xl text-text-secondary hover:text-text-primary transition-colors shrink-0">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-text-secondary leading-relaxed">
+                                El carrito ya tiene <span className="text-primary-500 font-bold">{cartConfirm.existingQuantity}</span> unidad(es) de <span className="font-bold text-text-primary">{cartConfirm.product.codigo}</span>.
+                            </p>
+                            <p className="text-sm text-text-secondary leading-relaxed">
+                                ¿Desea sumar <span className="text-primary-500 font-bold">{cartConfirm.quantity}</span> unidad(es) más al pedido actual?
+                            </p>
+                        </div>
+                        
+                        <div className="p-6 bg-surface-darker border-t border flex justify-end gap-3">
+                            <button
+                                onClick={() => setCartConfirm(null)}
+                                className="px-5 py-2.5 text-text-secondary font-bold hover:text-text-primary transition-colors uppercase text-[10px] tracking-widest"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleAddToCart(cartConfirm.product, cartConfirm.quantity, true);
+                                    setCartConfirm(null);
+                                }}
+                                className="px-6 py-2.5 bg-primary-500 text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-400 transition-all shadow-[0_5px_15px_rgba(255,184,0,0.2)]"
+                            >
+                                Sumar Cantidad
+                            </button>
                         </div>
                     </div>
                 </div>
