@@ -97,7 +97,7 @@ export const Catalog = () => {
         });
     };
 
-    const { role, user } = useAuthStore();
+    const { role, user, isInitializing } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
     const cartItems = useCartStore((state) => state.items);
 
@@ -428,6 +428,81 @@ export const Catalog = () => {
         }
     };
 
+
+    if (!user && !isInitializing) {
+        return (
+            <div className="space-y-6 text-text-primary">
+                {/* Search bar */}
+                <div className="bg-surface rounded-2xl shadow-xl border p-4 lg:p-6">
+                    <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-text-secondary group-focus-within:text-primary-500" />
+                        </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-12 pr-4 py-4 bg-white/95 border-2 border-primary-500/10 rounded-xl focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 text-base text-black placeholder-black/30 font-bold outline-none shadow-xl transition-all"
+                            placeholder="Búsqueda de productos, marcas o rubros..."
+                            value={search}
+                            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                        />
+                    </div>
+                </div>
+
+                {/* Login callout */}
+                <div className="bg-primary-500/10 border border-primary-500/20 rounded-xl px-5 py-4 text-center">
+                    <p className="text-sm font-bold text-primary-500">
+                        Inicie sesión para ver precios, ofertas y descuentos, y para realizar pedidos.
+                    </p>
+                </div>
+
+                {/* Simple product list */}
+                {loading ? (
+                    <div className="flex justify-center py-16">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {products.map(product => (
+                            <div key={product.codigo} className="bg-surface rounded-xl border border-white/5 hover:border-primary-500/30 transition-all p-3 flex items-center gap-4">
+                                <img
+                                    src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
+                                    alt={product.codigo}
+                                    className="w-12 h-12 object-cover rounded-lg flex-shrink-0 bg-surface-darker"
+                                    onError={(e) => { (e.target as HTMLImageElement).src = logoFallback; }}
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-black text-primary-500 uppercase tracking-widest">{product.codigo}</p>
+                                    <p className="text-[11px] text-text-secondary font-bold uppercase tracking-wide">{product.marca} · {product.rubro}</p>
+                                    <p className="text-sm font-bold text-text-primary truncate">{product.aplicacion}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-3 pb-8">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="p-2 rounded-xl bg-surface border hover:border-primary-500/50 text-text-secondary hover:text-primary-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-sm font-black text-text-secondary">{page} / {totalPages}</span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="p-2 rounded-xl bg-surface border hover:border-primary-500/50 text-text-secondary hover:text-primary-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 text-text-primary">

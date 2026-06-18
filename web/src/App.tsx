@@ -7,7 +7,6 @@ import { CartDrawer } from './components/cart/CartDrawer';
 import { CartSync } from './components/cart/CartSync';
 
 import { Catalog } from './pages/Catalog';
-import { Login } from './pages/Login';
 import { Contact } from './pages/Contact';
 import { Orders } from './pages/Orders';
 import { AdminClients } from './pages/admin/Clients';
@@ -30,7 +29,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   const { user, role, isInitializing } = useAuthStore();
 
   if (isInitializing) return null; // Wait for localStorage hydration before deciding
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   
   const roles = Array.isArray(allowedRoles) ? allowedRoles : (allowedRoles ? [allowedRoles] : []);
   if (roles.length > 0 && role && !roles.includes(role)) return <Navigate to="/" replace />;
@@ -48,7 +47,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Navigate to="/" replace />} />
 
         {/* Public Routes with Layout */}
         <Route path="/" element={<Layout><Catalog /></Layout>} />
