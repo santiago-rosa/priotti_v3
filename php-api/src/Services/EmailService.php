@@ -129,16 +129,21 @@ class EmailService
             $body .= "<thead><tr><th>Código</th><th>Marca</th><th>Cantidad</th></tr></thead><tbody>";
             
             $itemsArray = explode(',', trim($itemsString, ','));
+            $parsedItems = [];
             foreach ($itemsArray as $item) {
                 if (empty($item)) continue;
                 $parts = explode('&', $item);
                 if (count($parts) >= 3) {
-                    $body .= "<tr>";
-                    $body .= "<td>" . htmlspecialchars($parts[0]) . "</td>";
-                    $body .= "<td>" . htmlspecialchars($parts[1]) . "</td>";
-                    $body .= "<td>" . htmlspecialchars($parts[2]) . "</td>";
-                    $body .= "</tr>";
+                    $parsedItems[] = $parts;
                 }
+            }
+            usort($parsedItems, fn($a, $b) => strcmp($a[1], $b[1]));
+            foreach ($parsedItems as $parts) {
+                $body .= "<tr>";
+                $body .= "<td>" . htmlspecialchars($parts[0]) . "</td>";
+                $body .= "<td>" . htmlspecialchars($parts[1]) . "</td>";
+                $body .= "<td>" . htmlspecialchars($parts[2]) . "</td>";
+                $body .= "</tr>";
             }
             $body .= "</tbody></table>";
 

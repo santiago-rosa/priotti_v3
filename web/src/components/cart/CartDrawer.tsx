@@ -42,7 +42,7 @@ export const CartDrawer = () => {
             message += `*Cliente:* ${user?.nombre} [Cod: ${user?.numero || 'S/D'}]\n`;
             message += `*Detalle:*\n`;
             
-            items.forEach(item => {
+            [...items].sort((a, b) => a.marca.localeCompare(b.marca)).forEach(item => {
                 message += `- ${item.cantidad}x [${item.codigo}] ${item.rubro} ($${formatPrice(item.precio)})\n`;
             });
             
