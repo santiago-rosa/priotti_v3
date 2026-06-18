@@ -70,8 +70,8 @@ export const Catalog = () => {
 
     const handleQuantityChange = (codigo: string, delta: number) => {
         setQuantities(prev => {
-            const current = typeof prev[codigo] === 'number' ? (prev[codigo] as number) : 1;
-            const next = Math.max(1, current + delta);
+            const current = typeof prev[codigo] === 'number' ? (prev[codigo] as number) : 0;
+            const next = Math.max(0, current + delta);
             return { ...prev, [codigo]: next };
         });
     };
@@ -90,8 +90,8 @@ export const Catalog = () => {
     const handleQuantityBlur = (codigo: string) => {
         setQuantities(prev => {
             const val = prev[codigo];
-            if (val === '' || (typeof val === 'number' && val < 1)) {
-                return { ...prev, [codigo]: 1 };
+            if (val === '' || (typeof val === 'number' && val < 0)) {
+                return { ...prev, [codigo]: 0 };
             }
             return prev;
         });
@@ -841,7 +841,7 @@ export const Catalog = () => {
                                                     <input
                                                         type="number"
                                                         min="1"
-                                                        value={quantities[product.codigo] ?? 1}
+                                                        value={quantities[product.codigo] ?? 0}
                                                         onChange={(e) => handleQuantityInput(product.codigo, e.target.value)}
                                                         onBlur={() => handleQuantityBlur(product.codigo)}
                                                         className="w-10 text-center bg-transparent text-sm font-bold text-text-primary border-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -856,7 +856,9 @@ export const Catalog = () => {
                                                 <button
                                                     onClick={() => {
                                                         const qty = quantities[product.codigo];
-                                                        handleAddToCart(product, typeof qty === 'number' ? qty : 1);
+                                                        const effectiveQty = typeof qty === 'number' && qty > 0 ? qty : 1;
+                                                        setQuantities(prev => ({ ...prev, [product.codigo]: effectiveQty }));
+                                                        handleAddToCart(product, effectiveQty);
                                                     }}
                                                     className="p-2 bg-primary-500 text-black rounded-lg hover:bg-primary-400 transition-all shadow-lg active:scale-95"
                                                     title="Agregar al carrito"
@@ -1058,7 +1060,7 @@ export const Catalog = () => {
                                                     <input
                                                         type="number"
                                                         min="1"
-                                                        value={quantities[product.codigo] ?? 1}
+                                                        value={quantities[product.codigo] ?? 0}
                                                         onChange={(e) => handleQuantityInput(product.codigo, e.target.value)}
                                                         onBlur={() => handleQuantityBlur(product.codigo)}
                                                         className="w-8 text-center bg-transparent text-sm font-bold text-text-primary border-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -1073,7 +1075,9 @@ export const Catalog = () => {
                                                 <button
                                                     onClick={() => {
                                                         const qty = quantities[product.codigo];
-                                                        handleAddToCart(product, typeof qty === 'number' ? qty : 1);
+                                                        const effectiveQty = typeof qty === 'number' && qty > 0 ? qty : 1;
+                                                        setQuantities(prev => ({ ...prev, [product.codigo]: effectiveQty }));
+                                                        handleAddToCart(product, effectiveQty);
                                                     }}
                                                     className="bg-primary-500 hover:bg-primary-400 text-black px-3 py-2 rounded-xl shadow-[0_5px_15px_rgba(255,184,0,0.2)] hover:shadow-[0_8px_25px_rgba(255,184,0,0.4)] transition-all hover:-translate-y-1 active:scale-95 group/btn h-10 flex items-center justify-center"
                                                     aria-label="Agregar al carrito"
