@@ -591,15 +591,14 @@ export const Catalog = () => {
                         )}
                     </div>
 
-                    {/* Right Section: Compact Carousel - Hidden if scrolled */}
-                    {!isScrolled && (
+                    {/* Right Section: Compact Carousel - Hidden if scrolled or no discounts */}
+                    {!isScrolled && activeDiscounts.length > 0 && (
                         <div className="w-full lg:w-2/6 bg-surface-darker/10 relative overflow-hidden group/carousel min-w-0">
-                            {activeDiscounts.length > 0 ? (
-                                <div
-                                    className="h-full w-full relative"
-                                    onMouseEnter={() => setIsPaused(true)}
-                                    onMouseLeave={() => setIsPaused(false)}
-                                >
+                            <div
+                                className="h-full w-full relative"
+                                onMouseEnter={() => setIsPaused(true)}
+                                onMouseLeave={() => setIsPaused(false)}
+                            >
                                     {/* Nav Buttons */}
                                     <button
                                         onClick={() => { setIsTransitioning(true); setCarouselIndex(prev => prev - 1); }}
@@ -658,12 +657,7 @@ export const Catalog = () => {
                                         <ChevronRight className="w-4 h-4" />
                                     </button>
                                 </div>
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-text-secondary/10">
-                                    <Tag className="w-10 h-10" />
-                                </div>
-                            )}
-                        </div>
+                            </div>
                     )}
                 </div>
 
