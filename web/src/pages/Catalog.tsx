@@ -67,6 +67,7 @@ export const Catalog = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [quantities, setQuantities] = useState<Record<string, number | string>>({});
     const [cartConfirm, setCartConfirm] = useState<{product: Product, quantity: number, existingQuantity: number} | null>(null);
+    const [simplifiedMode, setSimplifiedMode] = useState(false);
 
     const handleQuantityChange = (codigo: string, delta: number) => {
         setQuantities(prev => {
@@ -504,6 +505,113 @@ export const Catalog = () => {
         );
     }
 
+    if (simplifiedMode) {
+        return (
+            <div className="space-y-3 text-text-primary">
+                {/* Simplified sticky header */}
+                <div className="bg-surface rounded-2xl shadow-xl border sticky top-[80px] z-30 overflow-hidden">
+                    <div className="flex items-stretch gap-2 p-3">
+                        <div className="relative group flex-1">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 text-text-secondary group-focus-within:text-primary-500" />
+                            </div>
+                            <input
+                                type="text"
+                                className="block w-full pl-9 pr-4 py-3 bg-white/95 border-2 border-primary-500/10 rounded-xl focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 text-base text-black placeholder-black/30 font-bold outline-none shadow-xl transition-all"
+                                placeholder="Buscar productos, marcas, rubros..."
+                                value={search}
+                                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                                autoFocus
+                            />
+                        </div>
+                        <button
+                            onClick={() => setSimplifiedMode(false)}
+                            className="shrink-0 flex items-center justify-center px-3 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 rounded-xl border border-primary-500/20 transition-all"
+                            title="Vista completa"
+                        >
+                            <LayoutGrid className="w-5 h-5" />
+                        </button>
+                    </div>
+                    {!loading && totalItems > 0 && (
+                        <div className="px-4 pb-2 text-[10px] font-black text-text-secondary uppercase tracking-widest">
+                            {totalItems} resultado{totalItems !== 1 ? 's' : ''}
+                        </div>
+                    )}
+                </div>
+
+                {/* Products */}
+                {loading ? (
+                    <div className="flex justify-center py-16">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
+                    </div>
+                ) : products.length === 0 ? (
+                    <div className="bg-surface p-12 text-center rounded-xl border border-dashed border-white/10">
+                        <Search className="mx-auto h-12 w-12 text-gray-700 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-300">No se encontraron productos</h3>
+                        <p className="mt-1 text-text-secondary">Intente ajustar los términos de búsqueda.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {products.map(product => {
+                            const displayApp = product.aplicacion?.replace(/=/g, 'IDEM ') || '';
+                            const basePrice = product.precio_lista * coeficiente;
+                            const isOriginalOffer = product.precio_oferta > 0;
+                            const hasGlobalDiscount = !isOriginalOffer && (product.descuento_global || 0) > 0;
+                            const displayPrice = isOriginalOffer
+                                ? product.precio_oferta
+                                : hasGlobalDiscount
+                                    ? basePrice * (1 - (product.descuento_global || 0) / 100)
+                                    : basePrice;
+                            const hasDiscount = isOriginalOffer || hasGlobalDiscount;
+                            return (
+                                <div key={product.codigo} className="bg-surface rounded-xl border border-white/5 hover:border-primary-500/30 transition-all p-3 flex items-center gap-3">
+                                    <img
+                                        src={`${import.meta.env.VITE_API_URL}/products/image/${product.imagen || product.codigo}`}
+                                        alt={product.codigo}
+                                        className="w-12 h-12 object-cover rounded-lg flex-shrink-0 bg-surface-darker"
+                                        onError={(e) => { (e.target as HTMLImageElement).src = logoFallback; }}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-black text-primary-500 uppercase tracking-widest">{product.codigo}</p>
+                                        <p className="text-[11px] text-text-secondary font-bold uppercase tracking-wide">{product.marca} · {product.rubro}</p>
+                                        <p className="text-sm font-bold text-text-primary truncate">{displayApp}</p>
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                        {hasDiscount && (
+                                            <p className="text-[10px] font-bold text-text-secondary line-through opacity-50 tabular-nums">${formatPrice(basePrice)}</p>
+                                        )}
+                                        <p className={`text-base font-black tabular-nums ${hasDiscount ? 'text-red-400' : 'text-primary-500'}`}>${formatPrice(displayPrice)}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-3 pb-8">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="p-2 rounded-xl bg-surface border hover:border-primary-500/50 text-text-secondary hover:text-primary-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-sm font-black text-text-secondary">{page} / {totalPages}</span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="p-2 rounded-xl bg-surface border hover:border-primary-500/50 text-text-secondary hover:text-primary-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6 text-text-primary">
             {/* Header and Controls Container */}
@@ -511,17 +619,27 @@ export const Catalog = () => {
                 <div className={`flex flex-col lg:flex-row items-stretch ${isScrolled ? 'min-h-0' : 'min-h-[160px]'}`}>
                     {/* Left Section: Search & Filters */}
                     <div className={`p-4 lg:p-6 flex flex-col justify-center gap-4 bg-surface/30 min-w-0 transition-all duration-300 ${isScrolled ? 'w-full grow' : 'w-full lg:w-4/6 lg:border-r border-white/5'}`}>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Search className="h-5 w-5 text-text-secondary group-focus-within:text-primary-500" />
+                        <div className="flex items-stretch gap-2">
+                            <div className="relative group flex-1">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-text-secondary group-focus-within:text-primary-500" />
+                                </div>
+                                <input
+                                    type="text"
+                                    className={`block w-full pl-12 pr-4 bg-white/95 border-2 border-primary-500/10 rounded-xl focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 text-base text-black placeholder-black/30 font-bold outline-none shadow-xl transition-all ${isScrolled ? 'py-2.5' : 'py-4'}`}
+                                    placeholder="Búsqueda rápida de productos, marcas o rubros..."
+                                    value={search}
+                                    onChange={(e) => { setSearch(e.target.value); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
+                                />
                             </div>
-                            <input
-                                type="text"
-                                className={`block w-full pl-12 pr-4 bg-white/95 border-2 border-primary-500/10 rounded-xl focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 text-base text-black placeholder-black/30 font-bold outline-none shadow-xl transition-all ${isScrolled ? 'py-2.5' : 'py-4'}`}
-                                placeholder="Búsqueda rápida de productos, marcas o rubros..."
-                                value={search}
-                                onChange={(e) => { setSearch(e.target.value); setBrandFilter(''); setRubroFilter(''); setPage(1); }}
-                            />
+                            <button
+                                onClick={() => setSimplifiedMode(true)}
+                                className="lg:hidden shrink-0 flex items-center gap-1.5 px-3 bg-surface-darker hover:bg-white/10 text-text-secondary hover:text-primary-500 rounded-xl border border-white/5 hover:border-primary-500/30 transition-all text-[10px] font-black uppercase tracking-widest"
+                                title="Vista simplificada"
+                            >
+                                <List className="w-4 h-4" />
+                                <span>Simple</span>
+                            </button>
                         </div>
 
                         {/* Condensed Filters Row */}
