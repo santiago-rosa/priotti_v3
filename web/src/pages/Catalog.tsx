@@ -133,7 +133,7 @@ export const Catalog = () => {
         } finally {
             if (showLoader) setLoading(false);
         }
-    }, [search, filter, brandFilter, rubroFilter, page]);
+    }, [search, filter, brandFilter, rubroFilter, page, user]);
 
     const fetchActiveDiscounts = useCallback(async () => {
         try {
