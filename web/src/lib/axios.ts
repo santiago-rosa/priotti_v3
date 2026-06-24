@@ -64,12 +64,11 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Force logout on unauthorized access
-            useAuthStore.getState().logout();
-            
-            // Redirect to login if not already there
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
+            const { user } = useAuthStore.getState();
+            if (user) {
+                // Session expired — log out and return to catalog
+                useAuthStore.getState().logout();
+                window.location.href = '/';
             }
         }
         return Promise.reject(error);
