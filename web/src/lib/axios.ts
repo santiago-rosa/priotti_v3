@@ -19,30 +19,36 @@ api.interceptors.request.use(
         if (token && !config.url?.includes('/auth/refresh') && !isRefreshing) {
             try {
                 const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const payload = JSON.parse(window.atob(base64));
-                
-                const iat = payload.iat * 1000;
-                const exp = payload.exp * 1000;
-                const now = Date.now();
-                
-                // Refresh when 50% of token life has passed
-                const refreshThresholdTime = iat + (exp - iat) * 0.5;
-                
-                if (now > refreshThresholdTime) {
-                    isRefreshing = true;
-                    api.get('/auth/refresh')
-                        .then(res => {
-                            if (res.data.token) {
-                                updateToken(res.data.token);
-                            }
-                        })
-                        .catch(err => {
-                            console.error('Failed to refresh token', err);
-                        })
-                        .finally(() => {
-                            isRefreshing = false;
-                        });
+                if (base64Url) {
+                    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const pad = base64.length % 4;
+                    if (pad) {
+                        base64 += '='.repeat(4 - pad);
+                    }
+                    const payload = JSON.parse(window.atob(base64));
+                    
+                    const iat = payload.iat * 1000;
+                    const exp = payload.exp * 1000;
+                    const now = Date.now();
+                    
+                    // Refresh when 50% of token life has passed
+                    const refreshThresholdTime = iat + (exp - iat) * 0.5;
+                    
+                    if (now > refreshThresholdTime) {
+                        isRefreshing = true;
+                        api.get('/auth/refresh')
+                            .then(res => {
+                                if (res.data.token) {
+                                    updateToken(res.data.token);
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Failed to refresh token', err);
+                            })
+                            .finally(() => {
+                                isRefreshing = false;
+                            });
+                    }
                 }
             } catch (e) {
                 // Ignore decoding errors
@@ -66,8 +72,8 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             const { user } = useAuthStore.getState();
             if (user) {
-                // Session expired — log out and return to catalog
-                useAuthStore.getState().logout();
+                // Session expired — log out (preserve cart) and return to catalog
+                useAuthStore.getState().logout(false);
                 window.location.href = '/';
             }
         }
