@@ -9,16 +9,16 @@ export default {
         extend: {
             colors: {
                 primary: {
-                    50: '#fffce6',
-                    100: '#fff7cc',
-                    200: '#fff099',
-                    300: '#ffe666',
-                    400: '#ffdb33',
-                    500: 'var(--primary)', // Dynamic Priotti Gold
+                    50:  '#fdf5e4',
+                    100: '#fbe9c0',
+                    200: '#f7d28a',
+                    300: '#f3bb55',
+                    400: '#F5B030',   /* lighter amber — hover states */
+                    500: 'var(--primary)',
                     600: 'var(--primary-hover)',
-                    700: '#cc9300',
-                    800: '#b38100',
-                    900: '#996e00',
+                    700: '#96610A',
+                    800: '#7A4E08',
+                    900: '#5E3C06',
                 },
                 surface: {
                     DEFAULT: 'var(--surface)',

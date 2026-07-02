@@ -121,11 +121,17 @@ class EmailService
 
             $this->mail->Subject = 'Pedido de Cliente Cod: ' . rtrim($clientCode) . ' - ' . rtrim($clientName);
             
-            // Translate the "codigo&marca&cant,..." string into HTML table
+            // Translate the "codigo&marca&cant,..." string into an HTML grid table with print-friendly styles
             $body = "<h2>Nuevo Pedido</h2>";
             $body .= "<p><strong>Cliente:</strong> $clientName [Código: $clientCode]</p>";
             $body .= "<h3>Artículos:</h3>";
-            $body .= "<table border='1' cellpadding='5' style='border-collapse: collapse;'>";
+            $body .= "<style>";
+            $body .= "table.order-items { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; }";
+            $body .= "table.order-items th, table.order-items td { border: 1px solid #444; padding: 8px; text-align: left; }";
+            $body .= "table.order-items th { background-color: #f4f4f4; }";
+            $body .= "@media print { body { margin: 0; } table.order-items { page-break-inside: avoid; } th { -webkit-print-color-adjust: exact; } }";
+            $body .= "</style>";
+            $body .= "<table class='order-items'>";
             $body .= "<thead><tr><th>Código</th><th>Marca</th><th>Cantidad</th></tr></thead><tbody>";
             
             $itemsArray = explode(',', trim($itemsString, ','));
@@ -137,7 +143,7 @@ class EmailService
                     $parsedItems[] = $parts;
                 }
             }
-            usort($parsedItems, fn($a, $b) => strcmp($a[1], $b[1]));
+            usort($parsedItems, fn($a, $b) => $a[1] === $b[1] ? strcmp($a[0], $b[0]) : strcmp($a[1], $b[1]));
             foreach ($parsedItems as $parts) {
                 $body .= "<tr>";
                 $body .= "<td>" . htmlspecialchars($parts[0]) . "</td>";

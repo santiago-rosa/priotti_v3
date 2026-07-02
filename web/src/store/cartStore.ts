@@ -31,14 +31,22 @@ export const useCartStore = create<CartState>()(
             total: 0,
             setIsOpen: (isOpen) => set({ isOpen }),
             addItem: (item) => {
-                const existing = get().items.find(i => i.codigo === item.codigo);
-                if (existing) {
-                    get().updateQuantity(item.codigo, existing.cantidad + item.cantidad);
-                } else {
-                    const newItems = [...get().items, item];
-                    const total = newItems.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
-                    set({ items: newItems, total });
+                const currentItems = [...get().items];
+                const existingIndex = currentItems.findIndex(i => i.codigo === item.codigo);
+
+                if (existingIndex >= 0) {
+                    currentItems[existingIndex] = {
+                        ...currentItems[existingIndex],
+                        cantidad: currentItems[existingIndex].cantidad + item.cantidad,
+                    };
+                    const total = currentItems.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+                    set({ items: currentItems, total });
+                    return;
                 }
+
+                const newItems = [...currentItems, item];
+                const total = newItems.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+                set({ items: newItems, total });
             },
             removeItem: (codigo) => {
                 const newItems = get().items.filter(i => i.codigo !== codigo);

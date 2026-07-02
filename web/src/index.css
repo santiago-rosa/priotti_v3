@@ -2,84 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Dark theme (default) ─────────────────────────────────────────────── */
 :root {
-  --background: #0a0b0d;
-  /* Ultra-deep Charcoal Black */
-  --surface: #282a3a;
-  /* Charcoal Navy from the palette */
-  --surface-light: #32354a;
-  --surface-darker: #000000;
-  /* Pure Black from the image */
-  --text-primary: #ece2d0;
-  /* Soft parchment for readability */
-  --text-secondary: #ffb800;
-  /* Aged Gold from the palette */
-  --border: rgba(198, 151, 73, 0.15);
-  --muted: rgba(198, 151, 73, 0.08);
-  --primary: #ffb800;
-  /* Classic Brass Gold */
-  --primary-hover: #a67c3a;
+  --background:     #0D1117;   /* GitHub-dark inspired near-black */
+  --surface:        #161C2B;   /* Deep navy card */
+  --surface-light:  #1C2538;   /* Card hover / inner panels */
+  --surface-darker: #080A0F;   /* Inputs, deep wells */
+  --text-primary:   #CDD9E5;   /* Cool readable white */
+  --text-secondary: #7B8EA6;   /* Muted slate-blue */
+  --border:         rgba(205, 217, 229, 0.07);
+  --muted:          rgba(205, 217, 229, 0.04);
+  --primary:        #F0A21A;   /* Refined amber */
+  --primary-hover:  #CB8811;
 }
 
+/* ─── Light theme ───────────────────────────────────────────────────────── */
 .light {
-  --background: #fcf7eb;
-  /* Ultra soft cream background */
-  --surface: #ffffff;
-  --surface-light: #ffffff;
-  --surface-darker: #f5ebd8;
-  /* Champagne tone from the image */
-  --text-primary: #191306;
-  /* Deep mocha/black for warm contrast */
-  --text-secondary: #5a4317;
-  /* Warm earth tone */
-  --border: rgba(25, 19, 6, 0.08);
-  --muted: rgba(25, 19, 6, 0.04);
-  --primary: #d2a652;
-  /* Warm gold from the palette */
-  --primary-hover: #b5872e;
+  --background:     #F3F6FB;   /* Cool slate-white, not warm cream */
+  --surface:        #FFFFFF;
+  --surface-light:  #EBF0F8;
+  --surface-darker: #DCE3EF;
+  --text-primary:   #111827;   /* Slate-900 */
+  --text-secondary: #556075;   /* Muted slate */
+  --border:         rgba(17, 24, 39, 0.09);
+  --muted:          rgba(17, 24, 39, 0.05);
+  --primary:        #C98510;   /* Deeper amber for contrast on white */
+  --primary-hover:  #A96D09;
 }
 
+/* ─── Base ──────────────────────────────────────────────────────────────── */
 @layer base {
   body {
     background-color: var(--background);
     color: var(--text-primary);
     @apply font-sans antialiased;
     background-image:
-      radial-gradient(circle at 50% -10%, rgba(198, 151, 73, 0.08) 0%, transparent 60%),
-      radial-gradient(circle at 100% 100%, rgba(40, 42, 58, 0.3) 0%, transparent 40%);
+      radial-gradient(ellipse 90% 50% at 50% -8%, rgba(88, 130, 255, 0.07) 0%, transparent 100%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(240, 162, 26, 0.04) 0%, transparent 100%);
     background-attachment: fixed;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
 .light body {
   background-image:
-    radial-gradient(circle at 50% -10%, rgba(210, 166, 82, 0.12) 0%, transparent 60%),
-    radial-gradient(circle at 100% 100%, rgba(210, 166, 82, 0.08) 0%, transparent 40%);
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(201, 133, 16, 0.06) 0%, transparent 100%);
 }
 
-/* Custom Scrollbar for a premium look */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-
-::-webkit-scrollbar-thumb {
+/* ─── Scrollbar ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; }
+::-webkit-scrollbar-track  { background: var(--background); }
+::-webkit-scrollbar-thumb  {
   background: var(--surface-light);
-  border-radius: 10px;
-  border: 2px solid var(--background);
+  border-radius: 8px;
+  border: 1px solid var(--background);
 }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
-}
-
+/* ─── Utility animations ────────────────────────────────────────────────── */
 @keyframes blink-attention {
   0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.1); filter: brightness(1.6); box-shadow: 0 0 25px 5px rgba(255, 184, 0, 0.6); }
+  50%       { transform: scale(1.1); filter: brightness(1.5); box-shadow: 0 0 20px 4px rgba(240, 162, 26, 0.55); }
 }
 
 .animate-blink-attention {
