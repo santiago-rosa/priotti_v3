@@ -42,9 +42,11 @@ export const CartDrawer = () => {
             message += `*Cliente:* ${user?.nombre} [Cod: ${user?.numero || 'S/D'}]\n`;
             message += `*Detalle:*\n`;
             
-            [...items].sort((a, b) => a.marca.localeCompare(b.marca)).forEach(item => {
-                message += `- ${item.cantidad}x [${item.codigo}] ${item.rubro} ($${formatPrice(item.precio)})\n`;
-            });
+            [...items]
+                .sort((a, b) => a.marca === b.marca ? a.codigo.localeCompare(b.codigo) : a.marca.localeCompare(b.marca))
+                .forEach(item => {
+                    message += `- ${item.cantidad}x [${item.codigo}] ${item.rubro} ($${formatPrice(item.precio)})\n`;
+                });
             
             message += `\n*TOTAL: $${formatPrice(total)}*\n\n`;
             message += `_Enviado desde el catálogo digital._`;
