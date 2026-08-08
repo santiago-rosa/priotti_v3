@@ -4,6 +4,8 @@ namespace App\Services;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class EmailService
 {
@@ -156,11 +158,52 @@ class EmailService
             $this->mail->Body = $body;
             $this->mail->AltBody = "Nuevo Pedido: Cliente [Cod: $clientCode] - $clientName\n\nArtículos: \n" . str_replace(['&', ','], [' - ', "\n"], $itemsString);
 
-            return $this->mail->send();
+            $tempFile = $this->buildOrderXlsx($clientCode, $clientName, $parsedItems);
+            $this->mail->addAttachment($tempFile, 'pedido.xlsx');
+
+            $sent = $this->mail->send();
+
+            $this->mail->clearAttachments();
+            @unlink($tempFile);
+
+            return $sent;
 
         } catch (Exception $e) {
             error_log('Email sendOrderNotification error: ' . $this->mail->ErrorInfo);
             return false;
         }
+    }
+
+    /**
+     * Build an xlsx file with the client info and order items (codigo, marca, cantidad) and return the temp file path
+     */
+    private function buildOrderXlsx(string $clientCode, string $clientName, array $parsedItems): string
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Pedido');
+
+        $sheet->setCellValue('A1', 'CLIENTE');
+        $sheet->setCellValue('B1', $clientName);
+        $sheet->setCellValue('A2', 'NUMERO');
+        $sheet->setCellValue('B2', $clientCode);
+
+        $sheet->setCellValue('A4', 'CODIGO');
+        $sheet->setCellValue('B4', 'MARCA');
+        $sheet->setCellValue('C4', 'CANTIDAD');
+
+        $row = 5;
+        foreach ($parsedItems as $parts) {
+            $sheet->setCellValue('A' . $row, $parts[0]);
+            $sheet->setCellValue('B' . $row, $parts[1]);
+            $sheet->setCellValue('C' . $row, (int) $parts[2]);
+            $row++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $tempFile = tempnam(sys_get_temp_dir(), 'pedido');
+        $writer->save($tempFile);
+
+        return $tempFile;
     }
 }
