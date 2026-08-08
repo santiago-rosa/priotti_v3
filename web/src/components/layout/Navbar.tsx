@@ -19,7 +19,7 @@ export const Navbar = () => {
     const [loginError, setLoginError] = useState('');
     const [loginLoading, setLoginLoading] = useState(false);
 
-    const cartItemsCount = items.reduce((acc, item) => acc + item.cantidad, 0);
+    const cartItemsCount = items.length;
 
     const handleLogout = () => {
         logout();

@@ -1,93 +1,22 @@
 import { useEffect, useRef } from 'react';
-import { useCartStore } from '../../store/cartStore';
-import type { CartItem } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
-import { api } from '../../lib/axios';
+import { useCartSync } from '../../hooks/useCartSync';
 
 export const CartSync = () => {
-    const { items, loadCart } = useCartStore();
     const { user, role } = useAuthStore();
-    const hasSyncedFromDB = useRef(false);
-    const isFirstRun = useRef(true);
-    const syncTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const { syncFromDB } = useCartSync();
+    const hasSynced = useRef(false);
 
-    // 1. Initial Load from DB on Login/Mount
     useEffect(() => {
-        const syncFromDB = async () => {
-            if (!user || role !== 'client') return;
-            
-            try {
-                const cartRes = await api.get('/orders/cart');
-                const dbItems = cartRes.data.items || [];
-                
-                if (dbItems.length > 0) {
-                    const codigos = dbItems.map((i: any) => i.codigo);
-                    const productsRes = await api.post('/products/list', { codigos });
-                    const products = productsRes.data.data;
-
-                    // coeficiente is now applied by the backend API
-                    const coeficiente = 1;
-                    
-                    const hydratedItems: CartItem[] = dbItems.map((dbItem: any) => {
-                        const p = products.find((prod: any) => prod.codigo === dbItem.codigo);
-                        if (!p) return null;
-
-                        const precio = p.precio_oferta > 0 ? p.precio_oferta : p.precio_lista * coeficiente;
-                        
-                        return {
-                            codigo: p.codigo,
-                            marca: p.marca,
-                            rubro: p.rubro,
-                            aplicacion: p.aplicacion?.replace(/=/g, 'IDEM ') || '',
-                            precio: parseFloat(precio.toFixed(2)),
-                            cantidad: dbItem.cantidad,
-                            imagen: p.codigo
-                        };
-                    }).filter(Boolean) as CartItem[];
-
-                    if (hydratedItems.length > 0) {
-                        loadCart(hydratedItems);
-                    }
-                }
-            } catch (error) {
-                console.error('Error syncing cart from DB', error);
-            }
-        };
-
         if (!user) {
-            hasSyncedFromDB.current = false;
+            hasSynced.current = false;
             return;
         }
-
-        if (role === 'client' && items.length === 0 && !hasSyncedFromDB.current) {
+        if (role === 'client' && !hasSynced.current) {
+            hasSynced.current = true;
             syncFromDB();
-            hasSyncedFromDB.current = true;
         }
-    }, [user, role, items.length, loadCart]); // Run when user logs in or cart is empty
+    }, [user, role, syncFromDB]);
 
-    // 2. Sync to DB on change (Debounced)
-    useEffect(() => {
-        if (isFirstRun.current) {
-            isFirstRun.current = false;
-            return;
-        }
-
-        if (!user || role !== 'client') return;
-
-        if (syncTimeout.current) clearTimeout(syncTimeout.current);
-
-        syncTimeout.current = setTimeout(async () => {
-            try {
-                await api.post('/orders/cart', { items });
-            } catch (error) {
-                console.error('Error syncing cart to DB', error);
-            }
-        }, 2000); // 2 second debounce
-
-        return () => {
-            if (syncTimeout.current) clearTimeout(syncTimeout.current);
-        };
-    }, [items, user, role]);
-
-    return null; // Side-effect only component
+    return null;
 };

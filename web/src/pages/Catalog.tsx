@@ -100,6 +100,14 @@ export const Catalog = () => {
 
     const { role, user, isInitializing } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
+    const handleAddItem = async (item: Parameters<typeof addItem>[0]) => {
+        addItem(item);
+        try {
+            await api.post('/orders/cart/item', { codigo: item.codigo, marca: item.marca, cantidad: item.cantidad });
+        } catch (error) {
+            console.error('Failed to add item to DB', error);
+        }
+    };
     const cartItems = useCartStore((state) => state.items);
 
     // coeficiente is now applied by the backend API to prevent exposing base list prices
@@ -400,7 +408,7 @@ export const Catalog = () => {
             finalPrice = normalPrice * (1 - (product.descuento_global || 0) / 100);
         }
 
-        addItem({
+        handleAddItem({
             codigo: product.codigo,
             marca: product.marca,
             rubro: product.rubro,

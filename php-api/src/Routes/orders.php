@@ -123,6 +123,122 @@ $app->post('/api/orders/cart', function (Request $request, Response $response) {
     }
 })->add(new AuthMiddleware());
 
+$app->post('/api/orders/cart/item', function (Request $request, Response $response) {
+    $user = $request->getAttribute('user');
+    $clientId = $user->id;
+    $data = $request->getParsedBody();
+    $codigo = $data['codigo'] ?? '';
+    $marca = $data['marca'] ?? '';
+    $cantidad = (int) ($data['cantidad'] ?? 1);
+
+    if (!$codigo || $cantidad < 1) {
+        $response->getBody()->write(json_encode(['error' => 'Invalid item']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT idpedidos, items FROM pedidos WHERE cliente = ? AND estado = 'PENDIENTE' LIMIT 1");
+        $stmt->execute([$clientId]);
+        $pendingOrder = $stmt->fetch();
+
+        if (!$pendingOrder) {
+            $itemsString = "$codigo&$marca&$cantidad,";
+            $stmt = $db->prepare("INSERT INTO pedidos (cliente, estado, items, fechapedido) VALUES (?, 'PENDIENTE', ?, NOW())");
+            $stmt->execute([$clientId, $itemsString]);
+        } else {
+            $itemsArray = explode(',', trim($pendingOrder['items'] ?? '', ','));
+            $items = [];
+            $found = false;
+            foreach ($itemsArray as $item) {
+                if (empty($item)) continue;
+                $parts = explode('&', $item);
+                if (count($parts) >= 3) {
+                    if ($parts[0] === $codigo) {
+                        $items[] = "$codigo&$marca&$cantidad";
+                        $found = true;
+                    } else {
+                        $items[] = $item;
+                    }
+                }
+            }
+            if (!$found) {
+                $items[] = "$codigo&$marca&$cantidad";
+            }
+            $itemsString = implode(',', $items) . ',';
+            $stmt = $db->prepare("UPDATE pedidos SET items = ? WHERE idpedidos = ?");
+            $stmt->execute([$itemsString, $pendingOrder['idpedidos']]);
+        }
+
+        $stmt = $db->prepare("SELECT items FROM pedidos WHERE cliente = ? AND estado = 'PENDIENTE' LIMIT 1");
+        $stmt->execute([$clientId]);
+        $updated = $stmt->fetch();
+        $jsonItems = [];
+        if ($updated) {
+            foreach (explode(',', trim($updated['items'] ?? '', ',')) as $item) {
+                if (empty($item)) continue;
+                $parts = explode('&', $item);
+                if (count($parts) >= 3) {
+                    $jsonItems[] = ['codigo' => $parts[0], 'marca' => $parts[1], 'cantidad' => (int) $parts[2]];
+                }
+            }
+        }
+
+        $response->getBody()->write(json_encode(['items' => $jsonItems]));
+        return $response->withHeader('Content-Type', 'application/json');
+
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => 'Server error']));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware());
+
+$app->delete('/api/orders/cart/item/{codigo}', function (Request $request, Response $response, array $args) {
+    $user = $request->getAttribute('user');
+    $clientId = $user->id;
+    $codigo = $args['codigo'];
+
+    try {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT idpedidos, items FROM pedidos WHERE cliente = ? AND estado = 'PENDIENTE' LIMIT 1");
+        $stmt->execute([$clientId]);
+        $pendingOrder = $stmt->fetch();
+
+        if (!$pendingOrder) {
+            $response->getBody()->write(json_encode(['items' => []]));
+            return $response->withHeader('Content-Type', 'application/json');
+        }
+
+        $itemsArray = explode(',', trim($pendingOrder['items'] ?? '', ','));
+        $items = [];
+        foreach ($itemsArray as $item) {
+            if (empty($item)) continue;
+            $parts = explode('&', $item);
+            if (count($parts) >= 3 && $parts[0] !== $codigo) {
+                $items[] = $item;
+            }
+        }
+        $itemsString = empty($items) ? '' : implode(',', $items) . ',';
+        $stmt = $db->prepare("UPDATE pedidos SET items = ? WHERE idpedidos = ?");
+        $stmt->execute([$itemsString, $pendingOrder['idpedidos']]);
+
+        $jsonItems = [];
+        foreach ($items as $item) {
+            $parts = explode('&', $item);
+            if (count($parts) >= 3) {
+                $jsonItems[] = ['codigo' => $parts[0], 'marca' => $parts[1], 'cantidad' => (int) $parts[2]];
+            }
+        }
+
+        $response->getBody()->write(json_encode(['items' => $jsonItems]));
+        return $response->withHeader('Content-Type', 'application/json');
+
+    } catch (\Exception $e) {
+        $response->getBody()->write(json_encode(['error' => 'Server error']));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add(new AuthMiddleware());
+
 $app->post('/api/orders/checkout', function (Request $request, Response $response) {
     $user = $request->getAttribute('user');
     $clientId = $user->id;
