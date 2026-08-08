@@ -1,22 +1,51 @@
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
+import { useCartSync } from '../../hooks/useCartSync';
 import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { formatPrice } from '../../lib/utils';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export const CartDrawer = () => {
     const { isOpen, setIsOpen, items, total, removeItem, updateQuantity, clearCart } = useCartStore();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const { user } = useAuthStore();
+    const { syncFromDB } = useCartSync();
+    const quantityTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+    useEffect(() => {
+        if (isOpen) {
+            syncFromDB();
+        }
+    }, [isOpen, syncFromDB]);
 
     if (!isOpen) return null;
+
+    const handleRemoveItem = async (codigo: string) => {
+        removeItem(codigo);
+        try {
+            await api.delete(`/orders/cart/item/${codigo}`);
+        } catch (error) {
+            console.error('Failed to remove item from DB', error);
+        }
+    };
+
+    const handleUpdateQuantity = (codigo: string, cantidad: number, marca: string) => {
+        updateQuantity(codigo, cantidad);
+        if (quantityTimeoutRef.current) clearTimeout(quantityTimeoutRef.current);
+        quantityTimeoutRef.current = setTimeout(async () => {
+            try {
+                await api.post('/orders/cart/item', { codigo, marca, cantidad });
+            } catch (error) {
+                console.error('Failed to update quantity in DB', error);
+            }
+        }, 1000);
+    };
 
     const handleEmailCheckout = async () => {
         if (!confirm('¿Desea confirmar el pedido por Email? Se enviará una copia al administrador.')) return;
         setIsCheckingOut(true);
         try {
-            // Save cart items and close order via backend (triggers email)
             await api.post('/orders/cart', { items });
             await api.post('/orders/checkout');
 
@@ -33,28 +62,26 @@ export const CartDrawer = () => {
     const handleWhatsAppCheckout = async () => {
         setIsCheckingOut(true);
         try {
-            // Save the cart to DB before opening WA so we have a record
             await api.post('/orders/cart', { items });
 
             const phone = import.meta.env.VITE_WHATSAPP_PHONE || '543513921731';
-            
+
             let message = `*NUEVO PEDIDO - FELIPE PRIOTTI S.A.*\n\n`;
             message += `*Cliente:* ${user?.nombre} [Cod: ${user?.numero || 'S/D'}]\n`;
             message += `*Detalle:*\n`;
-            
+
             [...items]
                 .sort((a, b) => a.marca === b.marca ? a.codigo.localeCompare(b.codigo) : a.marca.localeCompare(b.marca))
                 .forEach(item => {
                     message += `- ${item.cantidad}x [${item.codigo}] ${item.rubro} ($${formatPrice(item.precio)})\n`;
                 });
-            
+
             message += `\n*TOTAL: $${formatPrice(total)}*\n\n`;
             message += `_Enviado desde el catálogo digital._`;
 
             const encodedMessage = encodeURIComponent(message);
             window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
-            
-            // Mark the order as checkout/finished in DB so it doesn't reappear
+
             await api.post('/orders/checkout');
 
             alert('Pedido enviado a WhatsApp! Recuerde presionar "Enviar" en su aplicación.');
@@ -78,7 +105,7 @@ export const CartDrawer = () => {
                 <div className="flex items-center justify-between p-6 border-b">
                     <h2 className="text-xl font-black flex items-center text-text-primary tracking-widest uppercase">
                         <ShoppingBag className="mr-3 text-primary-500" />
-                        Mi Pedido
+                        Mi Pedido {items.length > 0 && <span className="ml-2 text-sm font-bold bg-primary-500 text-black rounded-full px-2 py-0.5">{items.length}</span>}
                     </h2>
                     <button
                         onClick={() => setIsOpen(false)}
@@ -98,7 +125,7 @@ export const CartDrawer = () => {
                         items.map(item => (
                             <div key={item.codigo} className="flex flex-col border rounded-2xl p-4 shadow-xl bg-surface-light/50 relative group hover:bg-surface-light transition-colors">
                                 <button
-                                    onClick={() => removeItem(item.codigo)}
+                                    onClick={() => handleRemoveItem(item.codigo)}
                                     className="absolute top-2 right-2 text-text-secondary hover:text-red-500"
                                 >
                                     <Trash2 className="h-4 w-4" />
@@ -110,7 +137,7 @@ export const CartDrawer = () => {
                                 <div className="flex items-center justify-between mt-4">
                                     <div className="flex items-center border rounded-xl overflow-hidden bg-surface-darker">
                                         <button
-                                            onClick={() => updateQuantity(item.codigo, Math.max(1, item.cantidad - 1))}
+                                            onClick={() => handleUpdateQuantity(item.codigo, Math.max(1, item.cantidad - 1), item.marca)}
                                             className="px-3 py-2 hover:bg-muted text-text-secondary hover:text-text-primary transition-colors"
                                         >
                                             <Minus className="h-3 w-3" />
@@ -121,11 +148,11 @@ export const CartDrawer = () => {
                                             value={item.cantidad}
                                             onChange={(e) => {
                                                 const val = parseInt(e.target.value);
-                                                if (!isNaN(val) && val >= 1) updateQuantity(item.codigo, val);
+                                                if (!isNaN(val) && val >= 1) handleUpdateQuantity(item.codigo, val, item.marca);
                                             }}
                                             onBlur={(e) => {
                                                 const val = parseInt(e.target.value);
-                                                if (isNaN(val) || val < 1) updateQuantity(item.codigo, item.cantidad);
+                                                if (isNaN(val) || val < 1) handleUpdateQuantity(item.codigo, item.cantidad, item.marca);
                                             }}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
@@ -133,7 +160,7 @@ export const CartDrawer = () => {
                                             className="w-14 text-center text-sm font-black text-text-primary bg-transparent border-none focus:ring-0 outline-none py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                         />
                                         <button
-                                            onClick={() => updateQuantity(item.codigo, item.cantidad + 1)}
+                                            onClick={() => handleUpdateQuantity(item.codigo, item.cantidad + 1, item.marca)}
                                             className="px-3 py-2 hover:bg-muted text-text-secondary hover:text-text-primary transition-colors"
                                         >
                                             <Plus className="h-3 w-3" />
@@ -153,7 +180,7 @@ export const CartDrawer = () => {
                         <span className="text-text-secondary font-bold uppercase tracking-widest text-xs">Total del Pedido</span>
                         <span className="text-2xl font-black text-primary-500 tracking-tighter">${formatPrice(total)}</span>
                     </div>
- 
+
                     <div className="grid grid-cols-1 gap-3">
                         <button
                             disabled={items.length === 0 || isCheckingOut}
@@ -162,7 +189,7 @@ export const CartDrawer = () => {
                         >
                             Confirmar por WhatsApp
                         </button>
-                        
+
                         <button
                             disabled={items.length === 0 || isCheckingOut}
                             onClick={handleEmailCheckout}
